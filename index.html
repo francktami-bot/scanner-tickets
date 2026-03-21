@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Scanner Tickets — Ocean Skills</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1923;--card:#1a2535;--bd:#2a3a50;--bl:#3b82f6;--gr:#10b981;--tx:#e2e8f0;--mu:#64748b}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,sans-serif;padding-bottom:90px}
+header{background:var(--card);border-bottom:1px solid var(--bd);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700}
+header p{font-size:11px;color:var(--mu)}
+.badge{background:var(--bl);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:8px}
+.wrap{padding:14px;max-width:500px;margin:0 auto}
+.panel{display:none}.panel.on{display:block}
+.btn{width:100%;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;margin-bottom:10px}
+.btn:active{opacity:.8}
+.bl{background:var(--bl);color:#fff}
+.gr{background:var(--gr);color:#fff}
+.gh{background:#1e2d3d;color:var(--tx);border:1px solid var(--bd)}
+.row{display:flex;gap:10px}.row .btn{margin-bottom:0}
+.ucard{background:var(--card);border:2px dashed var(--bd);border-radius:14px;padding:28px 16px;text-align:center;margin-bottom:14px}
+.ucard .ico{font-size:44px;margin-bottom:10px}
+.ucard h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.ucard p{font-size:13px;color:var(--mu);line-height:1.5}
+video{width:100%;border-radius:12px;background:#000;display:none;margin-bottom:10px}
+#cropWrap{background:#000;border-radius:12px;overflow:hidden;margin-bottom:10px;touch-action:none}
+#cropCv{display:block;width:100%}
+.tog{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.tog span{font-size:14px;flex:1}
+.sw{position:relative;width:44px;height:26px;flex-shrink:0}
+.sw input{opacity:0;position:absolute;width:0;height:0}
+.track{position:absolute;inset:0;background:var(--bd);border-radius:13px;cursor:pointer;transition:.3s}
+.track::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.track{background:var(--bl)}
+input:checked+.track::before{transform:translateX(18px)}
+.ia-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin-bottom:6px}
+.ia-row span{font-size:13px;color:var(--mu);flex:1}
+.ia-btn{background:var(--bl);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.ia-btn:disabled{opacity:.5}
+#iaMsg{font-size:12px;text-align:center;min-height:18px;margin-bottom:8px}
+.fields{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.field input{width:100%;background:var(--card);border:1.5px solid var(--bd);border-radius:10px;padding:12px;font-size:16px;color:var(--tx);font-family:inherit}
+.field input:focus{outline:none;border-color:var(--bl)}
+.pbox{background:#0c1f12;border:1px solid #1c4a2c;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.pbox .lb{font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.pbox .pt{font-size:14px;font-weight:600;color:#86efac}
+.pbox .fn{font-size:11px;color:var(--mu);margin-top:3px;font-family:monospace;word-break:break-all}
+.err{color:#fca5a5;font-size:13px;text-align:center;min-height:16px;margin-bottom:6px}
+.bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:2px solid var(--bd);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:999}
+.bar .btn{margin-bottom:0}
+.dbox{background:var(--card);border-radius:14px;padding:24px 16px;text-align:center}
+.dbox .ico{font-size:44px;margin-bottom:10px}
+.dbox h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.fnbadge{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;font-size:12px;font-family:monospace;color:var(--gr);word-break:break-all;margin:10px 0;text-align:left}
+.sbox{border-radius:10px;padding:14px;margin:10px 0;font-size:14px;font-weight:600;text-align:center}
+.sup{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
+.sok{background:#0c1f12;border:1px solid #10b981;color:#4ade80}
+.serr{background:#2a1515;border:1px solid #ef4444;color:#fca5a5}
+#resultImg{width:100%;border-radius:10px;border:2px solid var(--bl);display:none;margin:10px 0}
+canvas{display:none}
+.drive-banner{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.drive-banner .info{flex:1}
+.drive-banner .info b{display:block;font-size:14px;font-weight:700}
+.drive-banner .info span{font-size:12px;color:var(--mu)}
+.drive-banner button{background:var(--bl);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:20px">🧾</span>
+  <div><h1>Scanner Tickets<span class="badge">v1.0</span></h1><p>Ocean Skills — Compta 2026</p></div>
+</header>
+
+<canvas id="snapCv"></canvas>
+
+<div class="wrap">
+
+<!-- STEP CONFIG -->
+<div class="panel" id="pConfig">
+  <div style="background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:14px">
+    <div style="font-size:17px;font-weight:700;margin-bottom:8px">🔑 Clé API Anthropic</div>
+    <p style="font-size:13px;color:var(--mu);margin-bottom:14px;line-height:1.5">Nécessaire pour l'analyse automatique. Sauvegardée uniquement sur cet appareil.</p>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..."
+      style="width:100%;background:var(--bg);border:1.5px solid var(--bd);border-radius:10px;padding:12px;font-size:14px;color:var(--tx);font-family:monospace;margin-bottom:10px">
+    <p style="font-size:12px;color:#fbbf24;margin-bottom:12px">⚠️ Usage personnel uniquement.</p>
+    <button class="btn gr" onclick="saveApiKey()">💾 Enregistrer et continuer</button>
+  </div>
+  <div style="background:#0c1f12;border:1px solid #1c4a2c;border-radius:10px;padding:14px">
+    <div style="font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Comment obtenir ta clé ?</div>
+    <ol style="padding-left:18px;display:flex;flex-direction:column;gap:6px">
+      <li style="font-size:13px;color:#86efac">Va sur <strong style="color:#fff">console.anthropic.com</strong></li>
+      <li style="font-size:13px;color:#86efac">Menu → <strong style="color:#fff">API Keys → Create Key</strong></li>
+      <li style="font-size:13px;color:#86efac">Copie la clé et colle-la ci-dessus</li>
+    </ol>
+  </div>
+</div>
+
+<!-- STEP DRIVE : Connexion obligatoire avant tout -->
+<div class="panel" id="pDrive">
+  <div style="text-align:center;padding:30px 0 20px">
+    <div style="font-size:56px;margin-bottom:14px">📁</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:8px">Connexion Google Drive</div>
+    <p style="font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:24px">Autorise l'accès à Drive pour que les PDFs soient déposés automatiquement dans le bon dossier compta.</p>
+  </div>
+  <button class="btn gr" id="btnDriveConnect" onclick="connectGoogle()">🔗 Autoriser Google Drive</button>
+  <p style="font-size:12px;color:var(--mu);text-align:center;margin-top:8px">Une fenêtre Google va s'ouvrir pour autoriser l'accès</p>
+</div>
+
+<!-- STEP 0 : Caméra -->
+<div class="panel on" id="p0">
+  <div class="drive-banner" id="driveBanner">
+    <span style="font-size:22px">📁</span>
+    <div class="info">
+      <b>Google Drive</b>
+      <span id="driveMsg">Non connecté — appuie pour autoriser</span>
+    </div>
+    <button id="driveBtnConnect" onclick="connectGoogle()">🔗 Connecter</button>
+  </div>
+  <div class="ucard">
+    <div class="ico">📷</div>
+    <h2>Photo du ticket</h2>
+    <p>Pose le ticket sur une surface sombre et cadre-le entièrement</p>
+  </div>
+  <div class="err" id="errCam"></div>
+  <video id="vid" autoplay playsinline muted></video>
+  <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Activer la caméra</button>
+  <div class="row" id="camActions" style="display:none">
+    <button class="btn gh" onclick="stopCam()">✕ Annuler</button>
+    <button class="btn gr" style="flex:2" onclick="doSnap()">📸 Capturer</button>
+  </div>
+</div>
+
+<!-- STEP 1 : Recadrage + champs -->
+<div class="panel" id="p1">
+  <p style="font-size:12px;color:var(--mu);text-align:center;margin-bottom:8px">✏️ Ajuste les coins du cadre bleu</p>
+  <div id="cropWrap">
+    <canvas id="cropCv"
+      ontouchstart="onDown(event)" ontouchmove="onMove(event)" ontouchend="onUp()"
+      onmousedown="onDown(event)" onmousemove="onMove(event)" onmouseup="onUp()">
+    </canvas>
+  </div>
+  <div class="tog">
+    <span>🖤 Fond noir hors ticket</span>
+    <label class="sw"><input type="checkbox" id="bgTog" checked onchange="redraw()"><span class="track"></span></label>
+  </div>
+  <div class="ia-row">
+    <span>✨ Remplissage automatique par IA</span>
+    <button class="ia-btn" id="iaBtn" onclick="runIA()">Analyser</button>
+  </div>
+  <div id="iaMsg"></div>
+  <div class="fields">
+    <div class="field"><label>🏪 Établissement</label><input id="fE" type="text" placeholder="Ex: Le Cargo" oninput="updPath()"></div>
+    <div class="field"><label>📅 Date</label><input id="fD" type="text" placeholder="JJ/MM/AAAA" oninput="updPath()"></div>
+    <div class="field"><label>💶 Total TTC (€)</label><input id="fT" type="text" placeholder="171.70" inputmode="decimal" oninput="updPath()"></div>
+  </div>
+  <div class="pbox">
+    <div class="lb">📁 Destination Drive</div>
+    <div class="pt" id="pPth">—</div>
+    <div class="fn" id="pFn">—</div>
+  </div>
+  <div class="err" id="errGen"></div>
+</div>
+
+<!-- STEP 2 : Résultat -->
+<div class="panel" id="p2">
+  <div class="dbox">
+    <div class="ico" id="dIco">⏳</div>
+    <h2 id="dTitle">Envoi en cours…</h2>
+    <div class="fnbadge" id="dFn">—</div>
+    <img id="resultImg" alt="ticket">
+    <div class="sbox sup" id="statusBox">⏳ Envoi vers Google Drive…</div>
+    <div id="successBlock" style="display:none;margin-top:10px">
+      <button class="btn gh" style="font-size:13px" onclick="window.open(driveUrl,'_blank')">📂 Voir dans Drive</button>
+    </div>
+    <button class="btn gr" style="margin-top:10px" onclick="goTo(0)">🧾 Scanner un autre ticket</button>
+  </div>
+</div>
+
+</div>
+
+<!-- Barre fixe step 1 -->
+<div class="bar" id="b1" style="display:none">
+  <button class="btn gh" style="max-width:90px" onclick="goTo(0);stopCam()">← Retour</button>
+  <button class="btn gr" style="flex:1" id="btnGen" onclick="generate()">📄 Générer et envoyer</button>
+</div>
+
+<script>
+// ── Constantes ─────────────────────────────────────────────
+var GOOGLE_CLIENT_ID='1075001419936-emgoarlug8jnvmqnhc32ro58lmlhb2qh.apps.googleusercontent.com';
+var SCOPES='https://www.googleapis.com/auth/drive.file';
+var MONTHS={1:'01-Janvier',2:'02-Février',3:'03-Mars',4:'04-Avril',5:'05-Mai',6:'06-Juin',7:'07-Juillet',8:'08-Août',9:'09-Septembre',10:'10-Octobre',11:'11-Novembre',12:'12-Décembre'};
+var MOIS=['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+var ACHAT={
+  '2026':{
+    '01-Janvier 2026':'14vABkwN0X7s_9gU-2WW6Qka9L-OevFAY',
+    '02-Février 2026':'1X8ku8f-pM_jfQC2K8SmtuGuLH73EcCqE',
+    '03-Mars 2026':'1S1XelTqSLoK_MvB3Mm-dRiaQgxyYq3NN',
+    '04-Avril 2026':'1Rc77ZtUR2u_PGr73U17-H5mPHVQM4HQq',
+    '05-Mai 2026':'19-WK0nWpx-Vq8RLY3PaR4lFf4TPdDTcO',
+    '06-Juin 2026':'1eqtZCa8D4fUFVIjg2GvJBwhmrZA48u8n',
+    '07-Juillet 2026':'1w6Rk7-f14g-Hl3vJFBMllQrx_VSfrBQH',
+    '08-Août 2026':'1QWqcu_1zfUA9OM-qw3VCivklhhNXe7an',
+    '09-Septembre 2026':'1uN2lhhrnBElCNKstoZUpo5YOJcYYg-ak',
+    '10-Octobre 2026':'1TL8BTxrHHETGxYz4Z8ESJgxeSWdRut8Z',
+    '11-Novembre 2026':'1RMJQtD4KE4mYsNhz26oJD_H6vQNhfQk_',
+    '12-Décembre 2026':'10r48gLXDoXwz9hamdGQT_dUxeIyYudGg'
+  }
+};
+
+function getFolderId(mk, yr){
+  var yearData = ACHAT[String(yr)];
+  if(yearData && yearData[mk]) return yearData[mk];
+  return null;
+}
+var ROOT='1h1IcvWtfrgATFa2VeZAb1p6bnEkaVXMq';
+
+// ── State ──────────────────────────────────────────────────
+var API_KEY=localStorage.getItem('os_api_key')||'';
+var gToken=null, tokenClient=null;
+var snapData=null, pdfBlob=null, driveUrl='', pdfName='';
+var imgEl=null, iw=0, ih=0;
+var box={x:.05,y:.05,w:.9,h:.9};
+var drag=null, camStream=null;
+
+// ── Init ───────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  if(!API_KEY){ goPanel('pConfig'); }
+  else { goPanel('pDrive'); }
+});
+
+function goPanel(id){
+  ['pConfig','pDrive','p0','p1','p2'].forEach(function(p){
+    var el=document.getElementById(p);
+    if(el) el.className='panel'+(p===id?' on':'');
+  });
+  document.getElementById('b1').style.display=id==='p1'?'flex':'none';
+  window.scrollTo(0,0);
+}
+function goTo(n){ goPanel('p'+n); }
+
+// ── Clé API ────────────────────────────────────────────────
+function saveApiKey(){
+  var k=document.getElementById('apiKeyInput').value.trim();
+  if(!k||!k.startsWith('sk-')){ alert('Clé invalide — doit commencer par sk-'); return; }
+  localStorage.setItem('os_api_key',k);
+  API_KEY=k;
+  goPanel('pDrive');
+}
+
+// ── Google Drive OAuth ─────────────────────────────────────
+function connectGoogle(){
+  var btn=document.getElementById('btnDriveConnect');
+  if(btn){ btn.textContent='⏳ Connexion…'; btn.disabled=true; }
+  if(!tokenClient){
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:GOOGLE_CLIENT_ID,
+      scope:SCOPES,
+      callback:function(resp){
+        if(resp.error){
+          if(btn){ btn.textContent='⚠️ Réessayer'; btn.disabled=false; btn.style.background='#ef4444'; }
+          return;
+        }
+        gToken=resp.access_token;
+        // Met à jour le bandeau Drive sur p0
+        var banner=document.getElementById('driveBanner');
+        var msg=document.getElementById('driveMsg');
+        var bc=document.getElementById('driveBtnConnect');
+        if(banner){ banner.style.borderColor='#10b981'; banner.style.background='#0c1f12'; }
+        if(msg){ msg.textContent='✅ Connecté'; msg.style.color='#4ade80'; }
+        if(bc){ bc.textContent='✅'; bc.style.background='#10b981'; }
+        // Passe à l'écran caméra
+        goPanel('p0');
+      }
+    });
+  }
+  tokenClient.requestAccessToken();
+}
+
+// ── Caméra ─────────────────────────────────────────────────
+function startCam(){
+  document.getElementById('errCam').textContent='';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}})
+  .then(function(s){
+    camStream=s;
+    var v=document.getElementById('vid');
+    v.srcObject=s; v.style.display='block';
+    document.getElementById('btnStartCam').style.display='none';
+    document.getElementById('camActions').style.display='flex';
+  })
+  .catch(function(e){ document.getElementById('errCam').textContent='Caméra : '+e.message; });
+}
+function stopCam(){
+  if(camStream){ camStream.getTracks().forEach(function(t){t.stop()}); camStream=null; }
+  var v=document.getElementById('vid');
+  v.style.display='none'; v.srcObject=null;
+  document.getElementById('btnStartCam').style.display='flex';
+  document.getElementById('camActions').style.display='none';
+}
+function doSnap(){
+  var v=document.getElementById('vid');
+  var c=document.getElementById('snapCv');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  snapData=c.toDataURL('image/jpeg',0.95);
+  stopCam();
+  box={x:.05,y:.05,w:.9,h:.9};
+  document.getElementById('fE').value='';
+  document.getElementById('fD').value=tod();
+  document.getElementById('fT').value='';
+  document.getElementById('iaMsg').textContent='';
+  document.getElementById('iaBtn').disabled=false;
+  document.getElementById('iaBtn').textContent='Analyser';
+  document.getElementById('errGen').textContent='';
+  initCrop();
+  updPath();
+  goTo(1);
+}
+
+// ── Canvas recadrage ───────────────────────────────────────
+function initCrop(){
+  var c=document.getElementById('cropCv');
+  imgEl=new Image();
+  imgEl.onload=function(){
+    iw=imgEl.width; ih=imgEl.height;
+    c.width=iw; c.height=ih;
+    var dw=document.getElementById('cropWrap').clientWidth||340;
+    var dh=Math.min(window.innerHeight*.42,(ih/iw)*dw);
+    c.style.width=dw+'px'; c.style.height=dh+'px';
+    redraw();
+  };
+  imgEl.src=snapData;
+}
+function redraw(){
+  if(!imgEl) return;
+  var c=document.getElementById('cropCv');
+  var ctx=c.getContext('2d');
+  ctx.drawImage(imgEl,0,0);
+  if(document.getElementById('bgTog').checked){
+    var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih;
+    ctx.fillStyle='rgba(0,0,0,.76)';
+    ctx.fillRect(0,0,iw,by); ctx.fillRect(0,by+bh,iw,ih-by-bh);
+    ctx.fillRect(0,by,bx,bh); ctx.fillRect(bx+bw,by,iw-bx-bw,bh);
+  }
+  var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih;
+  ctx.strokeStyle='#3b82f6'; ctx.lineWidth=Math.max(3,iw/150);
+  ctx.strokeRect(bx,by,bw,bh);
+  var T=Math.max(20,iw/22);
+  [[bx,by],[bx+bw,by],[bx,by+bh],[bx+bw,by+bh]].forEach(function(p){
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(p[0],p[1],T,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=3; ctx.stroke();
+  });
+}
+function getPt(e){
+  var c=document.getElementById('cropCv');
+  var r=c.getBoundingClientRect(),sx=iw/r.width,sy=ih/r.height;
+  var s=e.touches?e.touches[0]:e;
+  return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};
+}
+function getHit(px,py){
+  var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih,T=Math.max(30,iw/12);
+  if(Math.abs(px-bx)<T&&Math.abs(py-by)<T) return'tl';
+  if(Math.abs(px-(bx+bw))<T&&Math.abs(py-by)<T) return'tr';
+  if(Math.abs(px-bx)<T&&Math.abs(py-(by+bh))<T) return'bl';
+  if(Math.abs(px-(bx+bw))<T&&Math.abs(py-(by+bh))<T) return'br';
+  if(px>bx&&px<bx+bw&&py>by&&py<by+bh) return'mv';
+  return null;
+}
+function onDown(e){
+  e.preventDefault();
+  var p=getPt(e),h=getHit(p.x,p.y);
+  if(!h) return;
+  drag={h:h,sp:p,sb:Object.assign({},box)};
+}
+function onMove(e){
+  if(!drag) return;
+  e.preventDefault();
+  var p=getPt(e),dx=(p.x-drag.sp.x)/iw,dy=(p.y-drag.sp.y)/ih;
+  var x=drag.sb.x,y=drag.sb.y,w=drag.sb.w,ht=drag.sb.h,mn=.04,h=drag.h;
+  if(h==='mv'){x=Math.max(0,Math.min(1-w,x+dx));y=Math.max(0,Math.min(1-ht,y+dy));}
+  else if(h==='tl'){var nw=Math.max(mn,w-dx),nh=Math.max(mn,ht-dy);x+=w-nw;y+=ht-nh;w=nw;ht=nh;}
+  else if(h==='tr'){w=Math.max(mn,w+dx);var nh2=Math.max(mn,ht-dy);y+=ht-nh2;ht=nh2;}
+  else if(h==='bl'){var nw2=Math.max(mn,w-dx);x+=w-nw2;w=nw2;ht=Math.max(mn,ht+dy);}
+  else if(h==='br'){w=Math.max(mn,w+dx);ht=Math.max(mn,ht+dy);}
+  box={x:Math.max(0,Math.min(1-w,x)),y:Math.max(0,Math.min(1-ht,y)),w:Math.min(1-x,w),h:Math.min(1-y,ht)};
+  redraw();
+}
+function onUp(){ drag=null; }
+
+// ── Analyse IA ─────────────────────────────────────────────
+function runIA(){
+  if(!snapData) return;
+  var btn=document.getElementById('iaBtn'),msg=document.getElementById('iaMsg');
+  btn.disabled=true; btn.textContent='⏳';
+  msg.style.color='#94a3b8'; msg.textContent='Analyse en cours…';
+  var b64=snapData.split(',')[1],mt=snapData.split(';')[0].split(':')[1];
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':API_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:300,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:mt,data:b64}},
+        {type:'text',text:'Ticket de caisse français. JSON UNIQUEMENT sans backticks:\n{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"JJ/MM/AAAA","total":"0.00"}'}
+      ]}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error){msg.style.color='#fca5a5';msg.textContent='❌ '+d.error.message;btn.textContent='Réessayer';btn.disabled=false;return;}
+    var txt=((d.content||[]).find(function(b){return b.type==='text';})||{}).text||'';
+    try{
+      var m=txt.replace(/```[a-z]*/gi,'').replace(/```/g,'').match(/\{[\s\S]*\}/);
+      var p=JSON.parse(m?m[0]:txt);
+      if(p.crop&&p.crop.w>.1){
+        box={x:cl(p.crop.x,.05),y:cl(p.crop.y,.05),w:cl(p.crop.w,.9),h:cl(p.crop.h,.9)};
+        redraw();
+      }
+      if(p.establishment) document.getElementById('fE').value=p.establishment;
+      if(p.date) document.getElementById('fD').value=p.date;
+      if(p.total) document.getElementById('fT').value=p.total;
+      updPath();
+      msg.style.color='#4ade80'; msg.textContent='✅ Vérifie et corrige si besoin';
+    }catch(e){
+      msg.style.color='#fbbf24'; msg.textContent='⚠️ Remplis manuellement';
+    }
+    btn.textContent='Ré-analyser'; btn.disabled=false;
+  })
+  .catch(function(){
+    msg.style.color='#fbbf24'; msg.textContent='⚠️ Réseau indisponible';
+    btn.textContent='Réessayer'; btn.disabled=false;
+  });
+}
+
+// ── Chemin Drive ───────────────────────────────────────────
+function updPath(){
+  var e=san(document.getElementById('fE').value||'Etablissement');
+  var date=document.getElementById('fD').value||tod();
+  var t=(document.getElementById('fT').value||'0').replace('.',',')+'euros';
+  var pts=date.split('/');
+  var m=parseInt(pts[1])||new Date().getMonth()+1;
+  var yr=parseInt(pts[2])||new Date().getFullYear();
+  var mk=MONTHS[m]?(MONTHS[m]+' '+yr):'03-Mars 2026';
+  var fn=e+'_'+(pts[0]||'00')+'-'+(MOIS[m]||'mois')+'-'+yr+'_'+t+'.pdf';
+  document.getElementById('pPth').textContent=mk+' › Achat';
+  document.getElementById('pFn').textContent=fn;
+}
+
+// ── Générer + Upload ───────────────────────────────────────
+function generate(){
+  var errEl=document.getElementById('errGen');
+  errEl.textContent='';
+  var btn=document.getElementById('btnGen');
+
+  // Lecture des champs
+  var eRaw=document.getElementById('fE').value.trim();
+  var dRaw=document.getElementById('fD').value.trim();
+  var tRaw=document.getElementById('fT').value.trim();
+
+  if(!eRaw){errEl.textContent='❌ Établissement manquant';return;}
+  if(!dRaw){errEl.textContent='❌ Date manquante';return;}
+  if(!tRaw){errEl.textContent='❌ Total manquant';return;}
+  if(!imgEl){errEl.textContent='❌ Image non disponible';return;}
+
+  // Calcul nom fichier
+  var etab=san(eRaw);
+  var pts=dRaw.split('/');
+  var mNum=parseInt(pts[1])||new Date().getMonth()+1;
+  var yr=parseInt(pts[2])||new Date().getFullYear();
+  var df=(pts[0]||'00')+'-'+(MOIS[mNum]||'mois')+'-'+yr;
+  var totalFmt=tRaw.replace('.',',')+' euros';
+  var mk=MONTHS[mNum]?(MONTHS[mNum]+' '+yr):'03-Mars 2026';
+  pdfName=etab+'_'+df+'_'+totalFmt+'.pdf';
+  var fid=getFolderId(mk,yr);
+  var folderId=fid||ROOT;
+  driveUrl='https://drive.google.com/drive/folders/'+folderId;
+
+  // Avertissement si l'année n'est pas encore configurée
+  if(!fid){
+    var confirm=window.confirm('⚠️ Les dossiers Drive pour '+yr+' ne sont pas encore configurés.\n\nLe PDF sera envoyé dans le dossier racine compta.\n\nContinuer quand même ?');
+    if(!confirm){ btn.disabled=false; btn.textContent='📄 Générer et envoyer'; return; }
+  }
+
+  btn.disabled=true; btn.textContent='⏳ Génération…';
+
+  try{
+    // Recadrage
+    var bx=Math.round(box.x*iw),by=Math.round(box.y*ih);
+    var bw=Math.round(box.w*iw),bh=Math.round(box.h*ih);
+    var tmp=document.createElement('canvas');
+    tmp.width=bw; tmp.height=bh;
+    var tc=tmp.getContext('2d');
+    tc.fillStyle='#fff'; tc.fillRect(0,0,bw,bh);
+    tc.drawImage(imgEl,bx,by,bw,bh,0,0,bw,bh);
+
+    // PDF
+    var J=window.jspdf.jsPDF;
+    var mW=190,mH=270,ratio=bw/bh,pw=mW,ph=mW/ratio;
+    if(ph>mH){ph=mH;pw=ph*ratio;}
+    var doc=new J({orientation:'portrait',unit:'mm',format:'a4'});
+    doc.addImage(tmp.toDataURL('image/jpeg',.92),'JPEG',(210-pw)/2,(297-ph)/2,pw,ph);
+    pdfBlob=doc.output('blob');
+
+    // Affichage résultat
+    document.getElementById('resultImg').src=tmp.toDataURL('image/jpeg',.7);
+    document.getElementById('resultImg').style.display='block';
+    document.getElementById('dFn').textContent=pdfName;
+    document.getElementById('dIco').textContent='⏳';
+    document.getElementById('dTitle').textContent='Envoi vers Drive…';
+    document.getElementById('statusBox').className='sbox sup';
+    document.getElementById('statusBox').textContent='⏳ Upload vers Google Drive…';
+    document.getElementById('btnDrive').style.display='none';
+
+    goTo(2);
+    uploadToDrive(pdfBlob, pdfName, folderId);
+
+  }catch(e){
+    errEl.textContent='❌ Erreur PDF : '+e.message;
+  }
+
+  btn.disabled=false; btn.textContent='📄 Générer et envoyer';
+}
+
+// ── Upload Drive ───────────────────────────────────────────
+function uploadToDrive(blob, filename, folderId){
+  var sb=document.getElementById('statusBox');
+  var bd=document.getElementById('btnDrive');
+
+  if(!gToken){
+    document.getElementById('dIco').textContent='❌';
+    document.getElementById('dTitle').textContent='Non connecté à Drive';
+    sb.className='sbox serr';
+    sb.textContent='❌ Non connecté à Google Drive — retourne à l\'accueil et connecte Drive';
+    bd.style.display='flex';
+    return;
+  }
+
+  var meta={name:filename,mimeType:'application/pdf',parents:[folderId]};
+  var form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  form.append('file',blob);
+
+  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+gToken},
+    body:form
+  })
+  .then(function(r){
+    if(!r.ok) return r.json().then(function(e){throw new Error(e.error?e.error.message:r.status);});
+    return r.json();
+  })
+  .then(function(){
+    document.getElementById('dIco').textContent='✅';
+    document.getElementById('dTitle').textContent='PDF enregistré dans Drive !';
+    sb.className='sbox sok';
+    sb.textContent='✅ '+filename+' → '+document.getElementById('pPth').textContent;
+    document.getElementById('successBlock').style.display='block';
+  })
+  .catch(function(e){
+    document.getElementById('dIco').textContent='❌';
+    document.getElementById('dTitle').textContent='Erreur upload';
+    sb.className='sbox serr';
+    sb.textContent='❌ '+e.message;
+    document.getElementById('successBlock').style.display='block';
+  });
+}
+
+function openDrive(){ window.open(driveUrl,'_blank'); }
+
+// ── Utils ──────────────────────────────────────────────────
+function tod(){var d=new Date();return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();}
+function pad(n){return String(n).padStart(2,'0');}
+function cl(v,def){v=parseFloat(v);return isNaN(v)?def:Math.min(1,Math.max(0,v));}
+function san(s){return s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9 -]/g,'').replace(/\s+/g,'_').substring(0,40);}
+</script>
+</body>
+</html>
