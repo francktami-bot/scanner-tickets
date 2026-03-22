@@ -525,8 +525,7 @@ function generate(){
     document.getElementById('dTitle').textContent='Envoi vers Drive…';
     document.getElementById('statusBox').className='sbox sup';
     document.getElementById('statusBox').textContent='⏳ Upload vers Google Drive…';
-    document.getElementById('btnDrive').style.display='none';
-
+    document.getElementById('successBlock').style.display='none';
     goTo(2);
     uploadToDrive(pdfBlob, pdfName, folderId);
 
@@ -540,22 +539,18 @@ function generate(){
 // ── Upload Drive ───────────────────────────────────────────
 function uploadToDrive(blob, filename, folderId){
   var sb=document.getElementById('statusBox');
-  var bd=document.getElementById('btnDrive');
-
   if(!gToken){
     document.getElementById('dIco').textContent='❌';
     document.getElementById('dTitle').textContent='Non connecté à Drive';
     sb.className='sbox serr';
-    sb.textContent='❌ Non connecté à Google Drive — retourne à l\'accueil et connecte Drive';
-    bd.style.display='flex';
+    sb.textContent='❌ Non connecté — retourne à l\'accueil et connecte Drive';
+    document.getElementById('successBlock').style.display='block';
     return;
   }
-
   var meta={name:filename,mimeType:'application/pdf',parents:[folderId]};
   var form=new FormData();
   form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
   form.append('file',blob);
-
   fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
     method:'POST',
     headers:{Authorization:'Bearer '+gToken},
