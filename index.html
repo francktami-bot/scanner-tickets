@@ -449,10 +449,11 @@ function updPath(){
   var t=(document.getElementById('fT').value||'0').replace('.',',')+'euros';
   var pts=date.split('/');
   var m=parseInt(pts[1])||new Date().getMonth()+1;
-  var yr=parseInt(pts[2])||new Date().getFullYear();
-  var mk=MONTHS[m]?(MONTHS[m]+' '+yr):'03-Mars 2026';
-  var fn=e+'_'+(pts[0]||'00')+'-'+(MOIS[m]||'mois')+'-'+yr+'_'+t+'.pdf';
-  document.getElementById('pPth').textContent=mk+' › Achat';
+  var yrRaw2=parseInt(pts[2])||new Date().getFullYear();
+  var yr2=yrRaw2<100?2000+yrRaw2:yrRaw2;
+  var mk2=MONTHS[m]?(MONTHS[m]+' '+yr2):'03-Mars 2026';
+  var fn=e+'_'+(pts[0]||'00')+'-'+(MOIS[m]||'mois')+'-'+yr2+'_'+t+'.pdf';
+  document.getElementById('pPth').textContent=mk2+' › Achat';
   document.getElementById('pFn').textContent=fn;
 }
 
@@ -476,14 +477,14 @@ function generate(){
   var etab=san(eRaw);
   var pts=dRaw.split('/');
   var mNum=parseInt(pts[1])||new Date().getMonth()+1;
-  var yr=parseInt(pts[2])||new Date().getFullYear();
+  // Force l'année en 4 chiffres
+  var yrRaw=parseInt(pts[2])||new Date().getFullYear();
+  var yr=yrRaw<100?2000+yrRaw:yrRaw;
   var df=(pts[0]||'00')+'-'+(MOIS[mNum]||'mois')+'-'+yr;
   var totalFmt=tRaw.replace('.',',')+' euros';
   var mk=MONTHS[mNum]+' '+yr;
-  console.log('mk=',mk,'yr=',yr,'ACHAT keys=',Object.keys(ACHAT[String(yr)]||{}));
   pdfName=etab+'_'+df+'_'+totalFmt+'.pdf';
   var fid=getFolderId(mk,yr);
-  console.log('folderId=',fid);
   var folderId=fid||ROOT;
   driveUrl='https://drive.google.com/drive/folders/'+folderId;
 
