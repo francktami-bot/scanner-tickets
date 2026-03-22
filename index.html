@@ -479,9 +479,11 @@ function generate(){
   var yr=parseInt(pts[2])||new Date().getFullYear();
   var df=(pts[0]||'00')+'-'+(MOIS[mNum]||'mois')+'-'+yr;
   var totalFmt=tRaw.replace('.',',')+' euros';
-  var mk=MONTHS[mNum]?(MONTHS[mNum]+' '+yr):'03-Mars 2026';
+  var mk=MONTHS[mNum]+' '+yr;
+  console.log('mk=',mk,'yr=',yr,'ACHAT keys=',Object.keys(ACHAT[String(yr)]||{}));
   pdfName=etab+'_'+df+'_'+totalFmt+'.pdf';
   var fid=getFolderId(mk,yr);
+  console.log('folderId=',fid);
   var folderId=fid||ROOT;
   driveUrl='https://drive.google.com/drive/folders/'+folderId;
 
@@ -519,7 +521,7 @@ function generate(){
     document.getElementById('dTitle').textContent='Envoi vers Drive…';
     document.getElementById('statusBox').className='sbox sup';
     document.getElementById('statusBox').textContent='⏳ Upload vers Google Drive…';
-    
+    document.getElementById('btnDrive').style.display='none';
 
     goTo(2);
     uploadToDrive(pdfBlob, pdfName, folderId);
@@ -534,14 +536,14 @@ function generate(){
 // ── Upload Drive ───────────────────────────────────────────
 function uploadToDrive(blob, filename, folderId){
   var sb=document.getElementById('statusBox');
-   
+  var bd=document.getElementById('btnDrive');
 
   if(!gToken){
     document.getElementById('dIco').textContent='❌';
     document.getElementById('dTitle').textContent='Non connecté à Drive';
     sb.className='sbox serr';
     sb.textContent='❌ Non connecté à Google Drive — retourne à l\'accueil et connecte Drive';
-     
+    bd.style.display='flex';
     return;
   }
 
