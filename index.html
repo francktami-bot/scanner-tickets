@@ -414,7 +414,7 @@ function runIA(){
       model:'claude-sonnet-4-20250514',max_tokens:300,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:mt,data:b64}},
-        {type:'text',text:'Ticket de caisse français. JSON UNIQUEMENT sans backticks:\n{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"JJ/MM/AAAA","total":"0.00"}'}
+        {type:'text',text:'Analyse ce ticket de caisse français avec soin.\nRéponds UNIQUEMENT avec ce JSON (sans backticks, sans texte autour) :\n{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"JJ/MM/AAAA","total":"0.00"}\n\nRègles strictes :\n- crop : zone du ticket dans l\'image (0.0 à 1.0)\n- establishment : nom exact du commerce/restaurant en haut du ticket (ex: "LE CARGO", "E.LECLERC", "CARREFOUR"). Jamais vide.\n- date : date de la transaction au format JJ/MM/AAAA avec année sur 4 chiffres (cherche "Du", "Le", "Date", ou une date dans le ticket)\n- total : montant TOTAL TTC en chiffres avec point décimal (ex: "171.70"). Cherche "TOTAL TTC", "TOTAL T.T.C.", "NET A PAYER", "MONTANT TTC". Prendre le montant final payé.'}
       ]}]
     })
   })
