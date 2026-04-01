@@ -30,8 +30,8 @@ header p{font-size:11px;color:var(--mu)}
 .ucard h2{font-size:17px;font-weight:700;margin-bottom:6px}
 .ucard p{font-size:13px;color:var(--mu);line-height:1.5}
 video{width:100%;border-radius:12px;background:#000;display:none;margin-bottom:10px}
-#cropWrap{background:#000;border-radius:12px;overflow:hidden;margin-bottom:10px;touch-action:none}
-#cropCv{display:block;width:100%}
+#cropWrap{background:#000;border-radius:12px;overflow:hidden;margin-bottom:10px;touch-action:none;position:relative}
+#cropCv{display:block;touch-action:none}
 .tog{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin-bottom:10px}
 .tog span{font-size:14px;flex:1}
 .sw{position:relative;width:44px;height:26px;flex-shrink:0}
@@ -47,8 +47,10 @@ input:checked+.track::before{transform:translateX(18px)}
 #iaMsg{font-size:12px;text-align:center;min-height:18px;margin-bottom:8px}
 .fields{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
 .field label{display:block;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.field input{width:100%;background:var(--card);border:1.5px solid var(--bd);border-radius:10px;padding:12px;font-size:16px;color:var(--tx);font-family:inherit}
-.field input:focus{outline:none;border-color:var(--bl)}
+.field input,.field select{width:100%;background:var(--card);border:1.5px solid var(--bd);border-radius:10px;padding:12px;font-size:16px;color:var(--tx);font-family:inherit;-webkit-appearance:none}
+.field input:focus,.field select:focus{outline:none;border-color:var(--bl)}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
 .pbox{background:#0c1f12;border:1px solid #1c4a2c;border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .pbox .lb{font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .pbox .pt{font-size:14px;font-weight:600;color:#86efac}
@@ -71,13 +73,17 @@ canvas{display:none}
 .drive-banner .info b{display:block;font-size:14px;font-weight:700}
 .drive-banner .info span{font-size:12px;color:var(--mu)}
 .drive-banner button{background:var(--bl);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.locale-bar{display:flex;gap:6px;margin-bottom:10px}
+.locale-bar button{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid var(--bd);background:var(--card);color:var(--mu);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:.15s}
+.locale-bar button.active{border-color:var(--bl);background:#1e3050;color:#fff}
+.locale-bar button:active{opacity:.8}
 </style>
 </head>
 <body>
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div>    <h1>Scanner Tickets<span class="badge">v1.1</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v1.2</span></h1><p>Ocean Skills — Compta 2026</p></div>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -94,17 +100,9 @@ canvas{display:none}
     <p style="font-size:12px;color:#fbbf24;margin-bottom:12px">⚠️ Usage personnel uniquement.</p>
     <button class="btn gr" onclick="saveApiKey()">💾 Enregistrer et continuer</button>
   </div>
-  <div style="background:#0c1f12;border:1px solid #1c4a2c;border-radius:10px;padding:14px">
-    <div style="font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Comment obtenir ta clé ?</div>
-    <ol style="padding-left:18px;display:flex;flex-direction:column;gap:6px">
-      <li style="font-size:13px;color:#86efac">Va sur <strong style="color:#fff">console.anthropic.com</strong></li>
-      <li style="font-size:13px;color:#86efac">Menu → <strong style="color:#fff">API Keys → Create Key</strong></li>
-      <li style="font-size:13px;color:#86efac">Copie la clé et colle-la ci-dessus</li>
-    </ol>
-  </div>
 </div>
 
-<!-- STEP DRIVE : Connexion obligatoire avant tout -->
+<!-- STEP DRIVE -->
 <div class="panel" id="pDrive">
   <div style="text-align:center;padding:30px 0 20px">
     <div style="font-size:56px;margin-bottom:14px">📁</div>
@@ -112,7 +110,6 @@ canvas{display:none}
     <p style="font-size:14px;color:var(--mu);line-height:1.6;margin-bottom:24px">Autorise l'accès à Drive pour que les PDFs soient déposés automatiquement dans le bon dossier compta.</p>
   </div>
   <button class="btn gr" id="btnDriveConnect" onclick="connectGoogle()">🔗 Autoriser Google Drive</button>
-  <p style="font-size:12px;color:var(--mu);text-align:center;margin-top:8px">Une fenêtre Google va s'ouvrir pour autoriser l'accès</p>
 </div>
 
 <!-- STEP 0 : Caméra -->
@@ -121,7 +118,7 @@ canvas{display:none}
     <span style="font-size:22px">📁</span>
     <div class="info">
       <b>Google Drive</b>
-      <span id="driveMsg">Non connecté — appuie pour autoriser</span>
+      <span id="driveMsg">Non connecté</span>
     </div>
     <button id="driveBtnConnect" onclick="connectGoogle()">🔗 Connecter</button>
   </div>
@@ -143,25 +140,44 @@ canvas{display:none}
 <div class="panel" id="p1">
   <p style="font-size:12px;color:var(--mu);text-align:center;margin-bottom:8px">✏️ Ajuste les coins du cadre bleu</p>
   <div id="cropWrap">
-    <canvas id="cropCv"
-      ontouchstart="onDown(event)" ontouchmove="onMove(event)" ontouchend="onUp()"
-      onmousedown="onDown(event)" onmousemove="onMove(event)" onmouseup="onUp()">
-    </canvas>
+    <canvas id="cropCv"></canvas>
   </div>
   <div class="tog">
     <span>🖤 Fond noir hors ticket</span>
     <label class="sw"><input type="checkbox" id="bgTog" checked onchange="redraw()"><span class="track"></span></label>
   </div>
+
+  <!-- Locale selector -->
+  <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🌍 Pays / devise du ticket</div>
+  <div class="locale-bar" id="localeBar">
+    <button onclick="setLocale('FR')" id="loc_FR" class="active">🇫🇷 France<br><span style="font-size:11px;color:var(--mu)">EUR €</span></button>
+    <button onclick="setLocale('US')" id="loc_US">🇺🇸 USA<br><span style="font-size:11px;color:var(--mu)">USD $</span></button>
+    <button onclick="setLocale('CA')" id="loc_CA">🇨🇦 Canada<br><span style="font-size:11px;color:var(--mu)">CAD $</span></button>
+    <button onclick="setLocale('GB')" id="loc_GB">🇬🇧 UK<br><span style="font-size:11px;color:var(--mu)">GBP £</span></button>
+  </div>
+
   <div class="ia-row">
-    <span>✨ Remplissage automatique par IA</span>
+    <span>✨ Remplissage auto par IA</span>
     <button class="ia-btn" id="iaBtn" onclick="runIA()">Analyser</button>
   </div>
   <div id="iaMsg"></div>
+
   <div class="fields">
     <div class="field"><label>🏪 Établissement</label><input id="fE" type="text" placeholder="Ex: Le Cargo" oninput="updPath()"></div>
-    <div class="field"><label>📅 Date</label><input id="fD" type="text" placeholder="JJ/MM/AAAA" oninput="updPath()"></div>
-    <div class="field"><label>💶 Total TTC (€)</label><input id="fT" type="text" placeholder="171.70" inputmode="decimal" oninput="updPath()"></div>
+    <div class="field-row">
+      <div class="field"><label>📅 Date</label><input id="fD" type="text" placeholder="JJ/MM/AAAA" oninput="updPath()"></div>
+      <div class="field" style="max-width:110px"><label>💱 Devise</label>
+        <select id="fCur" onchange="updPath()">
+          <option value="EUR">€ EUR</option>
+          <option value="USD">$ USD</option>
+          <option value="CAD">$ CAD</option>
+          <option value="GBP">£ GBP</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label id="totalLabel">💶 Total TTC</label><input id="fT" type="text" placeholder="171.70" inputmode="decimal" oninput="updPath()"></div>
   </div>
+
   <div class="pbox">
     <div class="lb">📁 Destination Drive</div>
     <div class="pt" id="pPth">—</div>
@@ -199,6 +215,7 @@ var GOOGLE_CLIENT_ID='1075001419936-emgoarlug8jnvmqnhc32ro58lmlhb2qh.apps.google
 var SCOPES='https://www.googleapis.com/auth/drive.file';
 var MONTHS={1:'01-Janvier',2:'02-Février',3:'03-Mars',4:'04-Avril',5:'05-Mai',6:'06-Juin',7:'07-Juillet',8:'08-Août',9:'09-Septembre',10:'10-Octobre',11:'11-Novembre',12:'12-Décembre'};
 var MOIS=['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+var MOIS_EN=['','January','February','March','April','May','June','July','August','September','October','November','December'];
 var ACHAT={
   '2026':{
     '01-Janvier 2026':'14vABkwN0X7s_9gU-2WW6Qka9L-OevFAY',
@@ -215,13 +232,86 @@ var ACHAT={
     '12-Décembre 2026':'10r48gLXDoXwz9hamdGQT_dUxeIyYudGg'
   }
 };
-
-function getFolderId(mk, yr){
-  var yearData = ACHAT[String(yr)];
-  if(yearData && yearData[mk]) return yearData[mk];
-  return null;
-}
 var ROOT='1h1IcvWtfrgATFa2VeZAb1p6bnEkaVXMq';
+
+// ── Locale config ──────────────────────────────────────────
+var LOCALES={
+  FR:{cur:'EUR',sym:'€',dateFmt:'DD/MM/YYYY',datePh:'JJ/MM/AAAA',totalPh:'171,70',curLabel:'💶 Total TTC (€)'},
+  US:{cur:'USD',sym:'$',dateFmt:'MM/DD/YYYY',datePh:'MM/DD/YYYY',totalPh:'171.70',curLabel:'💵 Total (USD $)'},
+  CA:{cur:'CAD',sym:'$',dateFmt:'MM/DD/YYYY',datePh:'MM/DD/YYYY',totalPh:'171.70',curLabel:'💵 Total (CAD $)'},
+  GB:{cur:'GBP',sym:'£',dateFmt:'DD/MM/YYYY',datePh:'DD/MM/YYYY',totalPh:'171.70',curLabel:'💷 Total (GBP £)'}
+};
+var locale='FR';
+
+function setLocale(loc){
+  locale=loc;
+  var cfg=LOCALES[loc];
+  // Update UI
+  document.querySelectorAll('.locale-bar button').forEach(function(b){b.className='';});
+  var el=document.getElementById('loc_'+loc);
+  if(el) el.className='active';
+  document.getElementById('fD').placeholder=cfg.datePh;
+  document.getElementById('fT').placeholder=cfg.totalPh;
+  document.getElementById('fCur').value=cfg.cur;
+  document.getElementById('totalLabel').textContent=cfg.curLabel;
+  // Save preference
+  localStorage.setItem('os_locale',loc);
+  updPath();
+}
+
+// ── Date parsing — handles both DD/MM/YYYY and MM/DD/YYYY ──
+function parseDate(raw){
+  if(!raw) return null;
+  var pts=raw.split(/[\/\-\.]/);
+  if(pts.length<3) return null;
+  var a=parseInt(pts[0])||0, b=parseInt(pts[1])||0, c=parseInt(pts[2])||0;
+  // Fix 2-digit year
+  if(c<100) c=2000+c;
+  var day,month,year=c;
+  var fmt=LOCALES[locale].dateFmt;
+  if(fmt==='MM/DD/YYYY'){
+    month=a; day=b;
+  } else {
+    day=a; month=b;
+  }
+  // Sanity check — swap if month>12 (user probably used wrong format)
+  if(month>12&&day<=12){ var tmp=month; month=day; day=tmp; }
+  if(month<1||month>12) month=new Date().getMonth()+1;
+  if(day<1||day>31) day=1;
+  return {day:day, month:month, year:year};
+}
+
+function formatDateForFilename(parsed){
+  if(!parsed) return '00-mois-2026';
+  return pad(parsed.day)+'-'+(MOIS[parsed.month]||'mois')+'-'+parsed.year;
+}
+
+function formatDateDisplay(parsed){
+  if(!parsed) return '';
+  if(LOCALES[locale].dateFmt==='MM/DD/YYYY'){
+    return pad(parsed.month)+'/'+pad(parsed.day)+'/'+parsed.year;
+  }
+  return pad(parsed.day)+'/'+pad(parsed.month)+'/'+parsed.year;
+}
+
+// ── Currency formatting for filename ───────────────────────
+function curLabel(val,cur){
+  var v=String(val||'0').replace(',','.');
+  var n=parseFloat(v);
+  if(isNaN(n)) n=0;
+  var cfg=LOCALES[locale];
+  cur=cur||cfg.cur;
+  if(cur==='EUR') return n.toFixed(2).replace('.',',')+' euros';
+  if(cur==='USD') return n.toFixed(2)+' USD';
+  if(cur==='CAD') return n.toFixed(2)+' CAD';
+  if(cur==='GBP') return n.toFixed(2)+' GBP';
+  return n.toFixed(2)+' '+cur;
+}
+
+function getFolderId(mk,yr){
+  var yd=ACHAT[String(yr)];
+  return (yd&&yd[mk])?yd[mk]:null;
+}
 
 // ── State ──────────────────────────────────────────────────
 var API_KEY=localStorage.getItem('os_api_key')||'';
@@ -230,11 +320,16 @@ var snapData=null, pdfBlob=null, driveUrl='', pdfName='';
 var imgEl=null, iw=0, ih=0;
 var box={x:.05,y:.05,w:.9,h:.9};
 var drag=null, camStream=null;
+// Canvas display dimensions (for correct coordinate mapping)
+var cvDisplayW=0, cvDisplayH=0;
 
 // ── Init ───────────────────────────────────────────────────
 window.addEventListener('load',function(){
-  if(!API_KEY){ goPanel('pConfig'); }
-  else { goPanel('pDrive'); }
+  // Restore locale
+  var savedLoc=localStorage.getItem('os_locale');
+  if(savedLoc&&LOCALES[savedLoc]) setLocale(savedLoc);
+  if(!API_KEY) goPanel('pConfig');
+  else goPanel('pDrive');
 });
 
 function goPanel(id){
@@ -250,9 +345,8 @@ function goTo(n){ goPanel('p'+n); }
 // ── Clé API ────────────────────────────────────────────────
 function saveApiKey(){
   var k=document.getElementById('apiKeyInput').value.trim();
-  if(!k||!k.startsWith('sk-')){ alert('Clé invalide — doit commencer par sk-'); return; }
-  localStorage.setItem('os_api_key',k);
-  API_KEY=k;
+  if(!k||!k.startsWith('sk-')){ alert('Clé invalide'); return; }
+  localStorage.setItem('os_api_key',k); API_KEY=k;
   goPanel('pDrive');
 }
 
@@ -262,22 +356,19 @@ function connectGoogle(){
   if(btn){ btn.textContent='⏳ Connexion…'; btn.disabled=true; }
   if(!tokenClient){
     tokenClient=google.accounts.oauth2.initTokenClient({
-      client_id:GOOGLE_CLIENT_ID,
-      scope:SCOPES,
+      client_id:GOOGLE_CLIENT_ID, scope:SCOPES,
       callback:function(resp){
         if(resp.error){
           if(btn){ btn.textContent='⚠️ Réessayer'; btn.disabled=false; btn.style.background='#ef4444'; }
           return;
         }
         gToken=resp.access_token;
-        // Met à jour le bandeau Drive sur p0
         var banner=document.getElementById('driveBanner');
         var msg=document.getElementById('driveMsg');
         var bc=document.getElementById('driveBtnConnect');
         if(banner){ banner.style.borderColor='#10b981'; banner.style.background='#0c1f12'; }
         if(msg){ msg.textContent='✅ Connecté'; msg.style.color='#4ade80'; }
         if(bc){ bc.textContent='✅'; bc.style.background='#10b981'; }
-        // Passe à l'écran caméra
         goPanel('p0');
       }
     });
@@ -299,7 +390,7 @@ function startCam(){
   .catch(function(e){ document.getElementById('errCam').textContent='Caméra : '+e.message; });
 }
 function stopCam(){
-  if(camStream){ camStream.getTracks().forEach(function(t){t.stop()}); camStream=null; }
+  if(camStream){ camStream.getTracks().forEach(function(t){t.stop();}); camStream=null; }
   var v=document.getElementById('vid');
   v.style.display='none'; v.srcObject=null;
   document.getElementById('btnStartCam').style.display='flex';
@@ -314,7 +405,7 @@ function doSnap(){
   stopCam();
   box={x:.05,y:.05,w:.9,h:.9};
   document.getElementById('fE').value='';
-  document.getElementById('fD').value=tod();
+  document.getElementById('fD').value=todLocal();
   document.getElementById('fT').value='';
   document.getElementById('iaMsg').textContent='';
   document.getElementById('iaBtn').disabled=false;
@@ -325,32 +416,63 @@ function doSnap(){
   goTo(1);
 }
 
-// ── Canvas recadrage ───────────────────────────────────────
+// ── Canvas recadrage — FIX: maintain exact aspect ratio ────
 function initCrop(){
   var c=document.getElementById('cropCv');
+  var wrap=document.getElementById('cropWrap');
   imgEl=new Image();
   imgEl.onload=function(){
     iw=imgEl.width; ih=imgEl.height;
     c.width=iw; c.height=ih;
-    var dw=document.getElementById('cropWrap').clientWidth||340;
-    var dh=Math.min(window.innerHeight*.42,(ih/iw)*dw);
-    c.style.width=dw+'px'; c.style.height=dh+'px';
+
+    // FIX v1.2: always maintain exact aspect ratio
+    var wrapW=wrap.clientWidth||340;
+    var ratio=ih/iw;
+    var displayW=wrapW;
+    var displayH=Math.round(wrapW*ratio);
+    // Cap height at 50% viewport but adjust width to keep ratio
+    var maxH=Math.round(window.innerHeight*0.50);
+    if(displayH>maxH){
+      displayH=maxH;
+      displayW=Math.round(maxH/ratio);
+    }
+    cvDisplayW=displayW;
+    cvDisplayH=displayH;
+    c.style.width=displayW+'px';
+    c.style.height=displayH+'px';
+    // Center canvas if narrower than wrapper
+    if(displayW<wrapW){
+      c.style.marginLeft=Math.round((wrapW-displayW)/2)+'px';
+    } else {
+      c.style.marginLeft='0';
+    }
+
+    // Attach touch events programmatically (non-passive for iOS)
+    c.addEventListener('touchstart',onDown,{passive:false});
+    c.addEventListener('touchmove',onMove,{passive:false});
+    c.addEventListener('touchend',onUp,{passive:false});
+    c.addEventListener('mousedown',onDown);
+    c.addEventListener('mousemove',onMove);
+    c.addEventListener('mouseup',onUp);
+
     redraw();
   };
   imgEl.src=snapData;
 }
+
 function redraw(){
   if(!imgEl) return;
   var c=document.getElementById('cropCv');
   var ctx=c.getContext('2d');
   ctx.drawImage(imgEl,0,0);
+  var bx=box.x*iw, by=box.y*ih, bw=box.w*iw, bh=box.h*ih;
   if(document.getElementById('bgTog').checked){
-    var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih;
     ctx.fillStyle='rgba(0,0,0,.76)';
-    ctx.fillRect(0,0,iw,by); ctx.fillRect(0,by+bh,iw,ih-by-bh);
-    ctx.fillRect(0,by,bx,bh); ctx.fillRect(bx+bw,by,iw-bx-bw,bh);
+    ctx.fillRect(0,0,iw,by);
+    ctx.fillRect(0,by+bh,iw,ih-by-bh);
+    ctx.fillRect(0,by,bx,bh);
+    ctx.fillRect(bx+bw,by,iw-bx-bw,bh);
   }
-  var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih;
   ctx.strokeStyle='#3b82f6'; ctx.lineWidth=Math.max(3,iw/150);
   ctx.strokeRect(bx,by,bw,bh);
   var T=Math.max(20,iw/22);
@@ -359,14 +481,19 @@ function redraw(){
     ctx.strokeStyle='#3b82f6'; ctx.lineWidth=3; ctx.stroke();
   });
 }
+
 function getPt(e){
   var c=document.getElementById('cropCv');
-  var r=c.getBoundingClientRect(),sx=iw/r.width,sy=ih/r.height;
+  var r=c.getBoundingClientRect();
+  // FIX v1.2: use stored display dimensions for consistent scaling
+  var sx=iw/cvDisplayW, sy=ih/cvDisplayH;
   var s=e.touches?e.touches[0]:e;
-  return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};
+  return{x:(s.clientX-r.left)*sx, y:(s.clientY-r.top)*sy};
 }
+
 function getHit(px,py){
-  var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih,T=Math.max(30,iw/12);
+  var bx=box.x*iw,by=box.y*ih,bw=box.w*iw,bh=box.h*ih;
+  var T=Math.max(40,iw/10); // FIX v1.2: bigger hit zone for mobile
   if(Math.abs(px-bx)<T&&Math.abs(py-by)<T) return'tl';
   if(Math.abs(px-(bx+bw))<T&&Math.abs(py-by)<T) return'tr';
   if(Math.abs(px-bx)<T&&Math.abs(py-(by+bh))<T) return'bl';
@@ -374,25 +501,47 @@ function getHit(px,py){
   if(px>bx&&px<bx+bw&&py>by&&py<by+bh) return'mv';
   return null;
 }
+
 function onDown(e){
   e.preventDefault();
   var p=getPt(e),h=getHit(p.x,p.y);
   if(!h) return;
-  drag={h:h,sp:p,sb:Object.assign({},box)};
+  drag={h:h,sp:p,sb:{x:box.x,y:box.y,w:box.w,h:box.h}};
 }
+
 function onMove(e){
   if(!drag) return;
   e.preventDefault();
   var p=getPt(e),dx=(p.x-drag.sp.x)/iw,dy=(p.y-drag.sp.y)/ih;
-  var x=drag.sb.x,y=drag.sb.y,w=drag.sb.w,ht=drag.sb.h,mn=.04,h=drag.h;
-  if(h==='mv'){x=Math.max(0,Math.min(1-w,x+dx));y=Math.max(0,Math.min(1-ht,y+dy));}
-  else if(h==='tl'){var nw=Math.max(mn,w-dx),nh=Math.max(mn,ht-dy);x+=w-nw;y+=ht-nh;w=nw;ht=nh;}
-  else if(h==='tr'){w=Math.max(mn,w+dx);var nh2=Math.max(mn,ht-dy);y+=ht-nh2;ht=nh2;}
-  else if(h==='bl'){var nw2=Math.max(mn,w-dx);x+=w-nw2;w=nw2;ht=Math.max(mn,ht+dy);}
-  else if(h==='br'){w=Math.max(mn,w+dx);ht=Math.max(mn,ht+dy);}
-  box={x:Math.max(0,Math.min(1-w,x)),y:Math.max(0,Math.min(1-ht,y)),w:Math.min(1-x,w),h:Math.min(1-y,ht)};
+  var ox=drag.sb.x,oy=drag.sb.y,ow=drag.sb.w,oh=drag.sb.h;
+  var nx=ox,ny=oy,nw=ow,nh=oh;
+  var mn=.04,h=drag.h;
+
+  if(h==='mv'){
+    nx=ox+dx; ny=oy+dy;
+  } else if(h==='tl'){
+    nx=ox+dx; ny=oy+dy; nw=ow-dx; nh=oh-dy;
+  } else if(h==='tr'){
+    ny=oy+dy; nw=ow+dx; nh=oh-dy;
+  } else if(h==='bl'){
+    nx=ox+dx; nw=ow-dx; nh=oh+dy;
+  } else if(h==='br'){
+    nw=ow+dx; nh=oh+dy;
+  }
+
+  // Enforce minimums
+  if(nw<mn){ nw=mn; if(h==='tl'||h==='bl') nx=ox+ow-mn; }
+  if(nh<mn){ nh=mn; if(h==='tl'||h==='tr') ny=oy+oh-mn; }
+  // Clamp to 0..1
+  if(nx<0){if(h==='mv'){nx=0;}else{nw+=nx;nx=0;}}
+  if(ny<0){if(h==='mv'){ny=0;}else{nh+=ny;ny=0;}}
+  if(nx+nw>1){if(h==='mv'){nx=1-nw;}else{nw=1-nx;}}
+  if(ny+nh>1){if(h==='mv'){ny=1-nh;}else{nh=1-ny;}}
+
+  box={x:nx,y:ny,w:nw,h:nh};
   redraw();
 }
+
 function onUp(){ drag=null; }
 
 // ── Analyse IA ─────────────────────────────────────────────
@@ -402,6 +551,32 @@ function runIA(){
   btn.disabled=true; btn.textContent='⏳';
   msg.style.color='#94a3b8'; msg.textContent='Analyse en cours…';
   var b64=snapData.split(',')[1],mt=snapData.split(';')[0].split(':')[1];
+
+  var dateInstruction='';
+  if(locale==='US'||locale==='CA'){
+    dateInstruction='The receipt is from '+locale+'. Date format is likely MM/DD/YYYY. Return the date as DD/MM/YYYY regardless (convert it).';
+  } else {
+    dateInstruction='Le ticket est français. La date est au format JJ/MM/AAAA.';
+  }
+
+  var curInstruction='';
+  var cfg=LOCALES[locale];
+  if(cfg.cur!=='EUR'){
+    curInstruction='The currency is '+cfg.cur+' ('+cfg.sym+'). Return the total amount as a number with dot decimal (e.g. "171.70").';
+  } else {
+    curInstruction='La devise est EUR (€). Renvoie le total TTC en chiffres avec point décimal (ex: "171.70").';
+  }
+
+  var prompt='Analyse ce ticket de caisse avec soin.\n'+
+    'Réponds UNIQUEMENT avec ce JSON (sans backticks, sans texte autour) :\n'+
+    '{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"DD/MM/YYYY","total":"0.00","currency":"'+cfg.cur+'"}\n\n'+
+    'Règles :\n'+
+    '- crop : zone du ticket dans l\'image (0.0 à 1.0)\n'+
+    '- establishment : nom exact du commerce en haut du ticket. Jamais vide.\n'+
+    '- date : TOUJOURS au format DD/MM/YYYY (jour/mois/année 4 chiffres). '+dateInstruction+'\n'+
+    '- total : montant TOTAL TTC final payé, chiffres avec point décimal. '+curInstruction+'\n'+
+    '- currency : code devise (EUR, USD, CAD, GBP)';
+
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{
@@ -414,7 +589,7 @@ function runIA(){
       model:'claude-sonnet-4-20250514',max_tokens:300,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:mt,data:b64}},
-        {type:'text',text:'Analyse ce ticket de caisse français avec soin.\nRéponds UNIQUEMENT avec ce JSON (sans backticks, sans texte autour) :\n{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"JJ/MM/AAAA","total":"0.00"}\n\nRègles strictes :\n- crop : zone du ticket dans l\'image (0.0 à 1.0)\n- establishment : nom exact du commerce/restaurant en haut du ticket (ex: "LE CARGO", "E.LECLERC", "CARREFOUR"). Jamais vide.\n- date : date de la transaction au format JJ/MM/AAAA avec année sur 4 chiffres (cherche "Du", "Le", "Date", ou une date dans le ticket)\n- total : montant TOTAL TTC en chiffres avec point décimal (ex: "171.70"). Cherche "TOTAL TTC", "TOTAL T.T.C.", "NET A PAYER", "MONTANT TTC". Prendre le montant final payé.'}
+        {type:'text',text:prompt}
       ]}]
     })
   })
@@ -430,8 +605,21 @@ function runIA(){
         redraw();
       }
       if(p.establishment) document.getElementById('fE').value=p.establishment;
-      if(p.date) document.getElementById('fD').value=p.date;
+      if(p.date){
+        // IA always returns DD/MM/YYYY — convert to locale display
+        var parsed=parseDateDDMMYYYY(p.date);
+        if(parsed) document.getElementById('fD').value=formatDateDisplay(parsed);
+        else document.getElementById('fD').value=p.date;
+      }
       if(p.total) document.getElementById('fT').value=p.total;
+      // Auto-detect currency from IA
+      if(p.currency&&LOCALES[p.currency===locale?locale:Object.keys(LOCALES).find(function(k){return LOCALES[k].cur===p.currency;})||locale]){
+        var detectedLocale=Object.keys(LOCALES).find(function(k){return LOCALES[k].cur===p.currency;});
+        if(detectedLocale&&detectedLocale!==locale){
+          setLocale(detectedLocale);
+        }
+        document.getElementById('fCur').value=p.currency;
+      }
       updPath();
       msg.style.color='#4ade80'; msg.textContent='✅ Vérifie et corrige si besoin';
     }catch(e){
@@ -445,18 +633,32 @@ function runIA(){
   });
 }
 
+// Parse a date string known to be DD/MM/YYYY (from IA)
+function parseDateDDMMYYYY(s){
+  var pts=s.split(/[\/\-\.]/);
+  if(pts.length<3) return null;
+  var d=parseInt(pts[0])||1,m=parseInt(pts[1])||1,y=parseInt(pts[2])||2026;
+  if(y<100) y+=2000;
+  if(m>12&&d<=12){var tmp=m;m=d;d=tmp;}
+  return{day:d,month:m,year:y};
+}
+
 // ── Chemin Drive ───────────────────────────────────────────
 function updPath(){
   var e=san(document.getElementById('fE').value||'Etablissement');
-  var date=document.getElementById('fD').value||tod();
-  var t=(document.getElementById('fT').value||'0').replace('.',',')+'euros';
-  var pts=date.split('/');
-  var m=parseInt(pts[1])||new Date().getMonth()+1;
-  var yrRaw2=parseInt(pts[2])||new Date().getFullYear();
-  var yr2=yrRaw2<100?2000+yrRaw2:yrRaw2;
-  var mk2=MONTHS[m]?(MONTHS[m]+' '+yr2):'03-Mars 2026';
-  var fn=e+'_'+(pts[0]||'00')+'-'+(MOIS[m]||'mois')+'-'+yr2+'_'+t+'.pdf';
-  document.getElementById('pPth').textContent=mk2+' › Achat';
+  var dateRaw=document.getElementById('fD').value||todLocal();
+  var tRaw=document.getElementById('fT').value||'0';
+  var cur=document.getElementById('fCur').value||LOCALES[locale].cur;
+
+  var parsed=parseDate(dateRaw);
+  if(!parsed) parsed={day:1,month:new Date().getMonth()+1,year:new Date().getFullYear()};
+
+  var df=formatDateForFilename(parsed);
+  var tf=curLabel(tRaw,cur);
+  var mk=MONTHS[parsed.month]+' '+parsed.year;
+  var fn=e+'_'+df+'_'+tf+'.pdf';
+
+  document.getElementById('pPth').textContent=mk+' › Achat';
   document.getElementById('pFn').textContent=fn;
 }
 
@@ -466,50 +668,51 @@ function generate(){
   errEl.textContent='';
   var btn=document.getElementById('btnGen');
 
-  // Lecture des champs
   var eRaw=document.getElementById('fE').value.trim();
   var dRaw=document.getElementById('fD').value.trim();
   var tRaw=document.getElementById('fT').value.trim();
+  var cur=document.getElementById('fCur').value||LOCALES[locale].cur;
 
   if(!eRaw){errEl.textContent='❌ Établissement manquant';return;}
   if(!dRaw){errEl.textContent='❌ Date manquante';return;}
   if(!tRaw){errEl.textContent='❌ Total manquant';return;}
   if(!imgEl){errEl.textContent='❌ Image non disponible';return;}
 
-  // Calcul nom fichier
   var etab=san(eRaw);
-  var pts=dRaw.split('/');
-  var mNum=parseInt(pts[1])||new Date().getMonth()+1;
-  // Force l'année en 4 chiffres
-  var yrRaw=parseInt(pts[2])||new Date().getFullYear();
-  var yr=yrRaw<100?2000+yrRaw:yrRaw;
-  var df=(pts[0]||'00')+'-'+(MOIS[mNum]||'mois')+'-'+yr;
-  var totalFmt=tRaw.replace('.',',')+' euros';
-  var mk=MONTHS[mNum]+' '+yr;
-  pdfName=etab+'_'+df+'_'+totalFmt+'.pdf';
-  var fid=getFolderId(mk,yr);
+  var parsed=parseDate(dRaw);
+  if(!parsed){errEl.textContent='❌ Format de date invalide';return;}
+
+  var df=formatDateForFilename(parsed);
+  var tf=curLabel(tRaw,cur);
+  var mk=MONTHS[parsed.month]+' '+parsed.year;
+  pdfName=etab+'_'+df+'_'+tf+'.pdf';
+  var fid=getFolderId(mk,parsed.year);
   var folderId=fid||ROOT;
   driveUrl='https://drive.google.com/drive/folders/'+folderId;
 
-  // Avertissement si l'année n'est pas encore configurée
   if(!fid){
-    var confirm=window.confirm('⚠️ Les dossiers Drive pour '+yr+' ne sont pas encore configurés.\n\nLe PDF sera envoyé dans le dossier racine compta.\n\nContinuer quand même ?');
-    if(!confirm){ btn.disabled=false; btn.textContent='📄 Générer et envoyer'; return; }
+    if(!window.confirm('⚠️ Dossiers Drive pour '+parsed.year+' non configurés.\nLe PDF ira dans le dossier racine.\n\nContinuer ?')) return;
   }
 
   btn.disabled=true; btn.textContent='⏳ Génération…';
 
   try{
-    // Recadrage
-    var bx=Math.round(box.x*iw),by=Math.round(box.y*ih);
-    var bw=Math.round(box.w*iw),bh=Math.round(box.h*ih);
+    // FIX v1.2: clamp crop to avoid drawImage overflow
+    var bx=Math.round(box.x*iw), by=Math.round(box.y*ih);
+    var bw=Math.round(box.w*iw), bh=Math.round(box.h*ih);
+    // Ensure we don't exceed image bounds
+    if(bx<0) bx=0;
+    if(by<0) by=0;
+    if(bx+bw>iw) bw=iw-bx;
+    if(by+bh>ih) bh=ih-by;
+    if(bw<10||bh<10){errEl.textContent='❌ Zone de recadrage trop petite';btn.disabled=false;btn.textContent='📄 Générer et envoyer';return;}
+
     var tmp=document.createElement('canvas');
     tmp.width=bw; tmp.height=bh;
     var tc=tmp.getContext('2d');
     tc.fillStyle='#fff'; tc.fillRect(0,0,bw,bh);
     tc.drawImage(imgEl,bx,by,bw,bh,0,0,bw,bh);
 
-    // PDF
     var J=window.jspdf.jsPDF;
     var mW=190,mH=270,ratio=bw/bh,pw=mW,ph=mW/ratio;
     if(ph>mH){ph=mH;pw=ph*ratio;}
@@ -517,7 +720,6 @@ function generate(){
     doc.addImage(tmp.toDataURL('image/jpeg',.92),'JPEG',(210-pw)/2,(297-ph)/2,pw,ph);
     pdfBlob=doc.output('blob');
 
-    // Affichage résultat
     document.getElementById('resultImg').src=tmp.toDataURL('image/jpeg',.7);
     document.getElementById('resultImg').style.display='block';
     document.getElementById('dFn').textContent=pdfName;
@@ -527,23 +729,21 @@ function generate(){
     document.getElementById('statusBox').textContent='⏳ Upload vers Google Drive…';
     document.getElementById('successBlock').style.display='none';
     goTo(2);
-    uploadToDrive(pdfBlob, pdfName, folderId);
+    uploadToDrive(pdfBlob,pdfName,folderId);
 
   }catch(e){
     errEl.textContent='❌ Erreur PDF : '+e.message;
   }
-
   btn.disabled=false; btn.textContent='📄 Générer et envoyer';
 }
 
 // ── Upload Drive ───────────────────────────────────────────
-function uploadToDrive(blob, filename, folderId){
+function uploadToDrive(blob,filename,folderId){
   var sb=document.getElementById('statusBox');
   if(!gToken){
     document.getElementById('dIco').textContent='❌';
     document.getElementById('dTitle').textContent='Non connecté à Drive';
-    sb.className='sbox serr';
-    sb.textContent='❌ Non connecté — retourne à l\'accueil et connecte Drive';
+    sb.className='sbox serr'; sb.textContent='❌ Non connecté — retourne et connecte Drive';
     document.getElementById('successBlock').style.display='block';
     return;
   }
@@ -552,9 +752,7 @@ function uploadToDrive(blob, filename, folderId){
   form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
   form.append('file',blob);
   fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
-    method:'POST',
-    headers:{Authorization:'Bearer '+gToken},
-    body:form
+    method:'POST', headers:{Authorization:'Bearer '+gToken}, body:form
   })
   .then(function(r){
     if(!r.ok) return r.json().then(function(e){throw new Error(e.error?e.error.message:r.status);});
@@ -570,16 +768,18 @@ function uploadToDrive(blob, filename, folderId){
   .catch(function(e){
     document.getElementById('dIco').textContent='❌';
     document.getElementById('dTitle').textContent='Erreur upload';
-    sb.className='sbox serr';
-    sb.textContent='❌ '+e.message;
+    sb.className='sbox serr'; sb.textContent='❌ '+e.message;
     document.getElementById('successBlock').style.display='block';
   });
 }
 
-function openDrive(){ window.open(driveUrl,'_blank'); }
-
 // ── Utils ──────────────────────────────────────────────────
-function tod(){var d=new Date();return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();}
+function todLocal(){
+  var d=new Date();
+  if(LOCALES[locale].dateFmt==='MM/DD/YYYY')
+    return pad(d.getMonth()+1)+'/'+pad(d.getDate())+'/'+d.getFullYear();
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+}
 function pad(n){return String(n).padStart(2,'0');}
 function cl(v,def){v=parseFloat(v);return isNaN(v)?def:Math.min(1,Math.max(0,v));}
 function san(s){return s.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9 -]/g,'').replace(/\s+/g,'_').substring(0,40);}
