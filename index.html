@@ -130,9 +130,9 @@ canvas{display:none}
   </div>
   <div class="err" id="errCam"></div>
   <video id="vid" autoplay playsinline muted></video>
-  <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Photo d\'un ticket papier</button>
+  <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Photo d'un ticket papier</button>
   <div style="display:flex;align-items:center;gap:10px;margin:6px 0 10px"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-size:12px;color:var(--mu)">ou</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>
-  <button class="btn gh" onclick="document.getElementById(\'pdfInput\').click()" style="border-color:#f59e0b50">📎 Importer une facture PDF</button>
+  <button class="btn gh" onclick="document.getElementById('pdfInput').click()" style="border-color:#f59e0b50">📎 Importer une facture PDF</button>
   <input type="file" id="pdfInput" accept="application/pdf,.pdf" style="display:none" onchange="handlePDF(this)">
   <div class="row" id="camActions" style="display:none">
     <button class="btn gh" onclick="stopCam()">✕ Annuler</button>
@@ -200,10 +200,10 @@ canvas{display:none}
 
   <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🌍 Pays / devise</div>
   <div class="locale-bar" id="localeBarPdf">
-    <button onclick="setLocale(\'FR\')" class="active" id="loc2_FR">🇫🇷 EUR €</button>
-    <button onclick="setLocale(\'US\')" id="loc2_US">🇺🇸 USD $</button>
-    <button onclick="setLocale(\'CA\')" id="loc2_CA">🇨🇦 CAD $</button>
-    <button onclick="setLocale(\'GB\')" id="loc2_GB">🇬🇧 GBP £</button>
+    <button onclick="setLocale('FR')" class="active" id="loc2_FR">🇫🇷 EUR €</button>
+    <button onclick="setLocale('US')" id="loc2_US">🇺🇸 USD $</button>
+    <button onclick="setLocale('CA')" id="loc2_CA">🇨🇦 CAD $</button>
+    <button onclick="setLocale('GB')" id="loc2_GB">🇬🇧 GBP £</button>
   </div>
 
   <div class="ia-row">
@@ -642,7 +642,7 @@ function runIA(){
     'Réponds UNIQUEMENT avec ce JSON (sans backticks, sans texte autour) :\n'+
     '{"crop":{"x":0.0,"y":0.0,"w":1.0,"h":1.0},"establishment":"NOM","date":"DD/MM/YYYY","total":"0.00","currency":"'+cfg.cur+'"}\n\n'+
     'Règles :\n'+
-    '- crop : zone du ticket dans l\'image (0.0 à 1.0)\n'+
+    '- crop : zone du ticket dans l'image (0.0 à 1.0)\n'+
     '- establishment : nom exact du commerce en haut du ticket. Jamais vide.\n'+
     '- date : TOUJOURS au format DD/MM/YYYY (jour/mois/année 4 chiffres). '+dateInstruction+'\n'+
     '- total : montant TOTAL TTC final payé, chiffres avec point décimal. '+curInstruction+'\n'+
@@ -960,7 +960,7 @@ function runPdfIA(){
     },
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',max_tokens:300,
-      messages:[{role:'user',content:'Voici le texte extrait d\'une facture PDF. Extrais les informations et renvoie UNIQUEMENT ce JSON (sans backticks):\n{"establishment":"NOM","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles:\n- establishment: nom de la societe qui facture\n- date: date de facturation au format DD/MM/YYYY. Si la date source est en format US (MM/DD/YYYY), convertis-la.\n- total: montant TTC final, chiffres avec point decimal\n- currency: EUR, USD, CAD ou GBP\n\nTexte:\n'+pdfText.substring(0,3000)}]
+      messages:[{role:'user',content:'Voici le texte extrait d'une facture PDF. Extrais les informations et renvoie UNIQUEMENT ce JSON (sans backticks):\n{"establishment":"NOM","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles:\n- establishment: nom de la societe qui facture\n- date: date de facturation au format DD/MM/YYYY. Si la date source est en format US (MM/DD/YYYY), convertis-la.\n- total: montant TTC final, chiffres avec point decimal\n- currency: EUR, USD, CAD ou GBP\n\nTexte:\n'+pdfText.substring(0,3000)}]
     })
   })
   .then(function(r){return r.json();})
