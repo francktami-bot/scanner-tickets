@@ -70,13 +70,16 @@ canvas{display:none}
 video{width:100%;border-radius:12px;display:none}
 #camActions{display:none;gap:8px;margin-top:8px}
 #errCam{color:#fca5a5;font-size:13px;min-height:18px}
+.cam-fullscreen{position:fixed!important;top:0;left:0;right:0;bottom:0;z-index:9999;background:#000;display:flex;flex-direction:column}
+.cam-fullscreen video{flex:1;width:100%;height:100%;object-fit:cover;border-radius:0;display:block!important}
+.cam-fullscreen .cam-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(15,25,35,0.95);padding:12px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:10000}
 </style>
 </head>
 <body>
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v1.6</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v1.7</span></h1><p>Ocean Skills — Compta 2026</p></div>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -123,9 +126,14 @@ video{width:100%;border-radius:12px;display:none}
 
   <video id="vid" playsinline autoplay muted></video>
   <div id="errCam"></div>
-  <div id="camActions">
-    <button class="btn gr" onclick="doSnap()">📸 Capturer</button>
-    <button class="btn gh" onclick="stopCam()">Annuler</button>
+
+  <!-- Fullscreen camera overlay -->
+  <div id="camOverlay" style="display:none" class="cam-fullscreen">
+    <video id="vidFS" playsinline autoplay muted style="flex:1;width:100%;object-fit:cover"></video>
+    <div class="cam-bar">
+      <button class="btn gh" style="max-width:100px" onclick="stopCam()">Annuler</button>
+      <button class="btn gr" style="flex:1" onclick="doSnap()">📸 Capturer</button>
+    </div>
   </div>
 
   <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Photo d'un ticket papier</button>
@@ -397,10 +405,9 @@ function startCam() {
   })
   .then(function(stream) {
     camStream = stream;
-    var v = document.getElementById('vid');
+    var v = document.getElementById('vidFS');
     v.srcObject = stream;
-    v.style.display = 'block';
-    document.getElementById('camActions').style.display = 'flex';
+    document.getElementById('camOverlay').style.display = 'flex';
   })
   .catch(function(e) {
     document.getElementById('errCam').textContent = 'Camera : ' + e.message;
@@ -413,15 +420,14 @@ function stopCam() {
     camStream.getTracks().forEach(function(t) { t.stop(); });
     camStream = null;
   }
-  var v = document.getElementById('vid');
-  v.style.display = 'none';
+  var v = document.getElementById('vidFS');
   v.srcObject = null;
+  document.getElementById('camOverlay').style.display = 'none';
   document.getElementById('btnStartCam').style.display = 'flex';
-  document.getElementById('camActions').style.display = 'none';
 }
 
 function doSnap() {
-  var v = document.getElementById('vid');
+  var v = document.getElementById('vidFS');
   var c = document.getElementById('snapCv');
   c.width = v.videoWidth;
   c.height = v.videoHeight;
@@ -708,19 +714,25 @@ function runIA() {
   msg.style.color = '#94a3b8';
   msg.textContent = 'Analyse en cours…';
 
-  // Compress image before sending
+  // Compress image before sending — keep good quality
   var tempImg = new Image();
   tempImg.onload = function() {
-    var maxW = 1200;
+    var maxW = 1600;
     var scale = tempImg.width > maxW ? maxW / tempImg.width : 1;
     var tc = document.createElement('canvas');
     tc.width = Math.round(tempImg.width * scale);
     tc.height = Math.round(tempImg.height * scale);
     tc.getContext('2d').drawImage(tempImg, 0, 0, tc.width, tc.height);
-    var compressed = tc.toDataURL('image/jpeg', 0.7);
+    var compressed = tc.toDataURL('image/jpeg', 0.85);
     var b64 = compressed.split(',')[1];
 
-    var prompt = 'Analyse ce ticket de caisse. Reponds UNIQUEMENT avec un JSON valide (sans backticks) :\n{"establishment":"","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles:\n- establishment: nom de l\'enseigne\n- date: TOUJOURS au format DD/MM/YYYY avec annee en 4 chiffres\n- total: montant TTC, chiffres avec point decimal\n- currency: EUR, USD, CAD ou GBP';
+    var locInfo = '';
+    if (locale === 'US') locInfo = 'Ce ticket provient des USA. La date sur le ticket est au format americain MM/DD/YYYY. Tu dois la CONVERTIR au format DD/MM/YYYY dans ta reponse. Exemple: si tu lis 01/03/2026 sur le ticket, cela signifie le 3 janvier 2026, donc tu reponds 03/01/2026.';
+    else if (locale === 'CA') locInfo = 'Ce ticket provient du Canada. La date sur le ticket peut etre au format MM/DD/YYYY. Tu dois la CONVERTIR au format DD/MM/YYYY dans ta reponse.';
+    else if (locale === 'GB') locInfo = 'Ce ticket provient du Royaume-Uni. La date est deja au format DD/MM/YYYY.';
+    else locInfo = 'Ce ticket provient de France. La date est au format DD/MM/YYYY.';
+
+    var prompt = 'Analyse ce ticket de caisse avec une grande precision. Reponds UNIQUEMENT avec un JSON valide (sans backticks) :\n{"establishment":"","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles STRICTES:\n- establishment: lis TRES attentivement le nom exact de l\'enseigne sur le ticket. Chaque lettre compte.\n- date: ' + locInfo + ' L\'annee DOIT avoir 4 chiffres.\n- total: montant TTC final (le plus grand montant en bas du ticket), chiffres avec point decimal\n- currency: EUR pour France, USD pour USA, CAD pour Canada, GBP pour UK';
 
     fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -758,7 +770,30 @@ function runIA() {
         var p = JSON.parse(m ? m[0] : clean);
         if (p.establishment) document.getElementById('fE').value = p.establishment;
         if (p.date) {
-          var pd = parseDateDDMMYYYY(p.date);
+          // If locale is US/CA, IA might still return MM/DD/YYYY despite instructions
+          // We need to handle both cases
+          var pd;
+          if ((locale === 'US' || locale === 'CA') && p.date) {
+            // Check if IA returned MM/DD — first number > 12 means it already converted to DD/MM
+            var pts = p.date.split(/[\/\-\.]/);
+            var first = parseInt(pts[0]) || 0;
+            var second = parseInt(pts[1]) || 0;
+            if (first <= 12 && second <= 12) {
+              // Ambiguous — assume IA returned MM/DD (US format) since locale is US
+              // Convert to DD/MM
+              pd = {day: second, month: first, year: parseInt(pts[2]) || 2026};
+              if (pd.year < 100) pd.year = 2000 + pd.year;
+            } else if (first > 12) {
+              // First > 12 means it's DD/MM already (IA converted correctly)
+              pd = parseDateDDMMYYYY(p.date);
+            } else {
+              // second > 12 means it's MM/DD (month=first, day=second)
+              pd = {day: second, month: first, year: parseInt(pts[2]) || 2026};
+              if (pd.year < 100) pd.year = 2000 + pd.year;
+            }
+          } else {
+            pd = parseDateDDMMYYYY(p.date);
+          }
           if (pd) document.getElementById('fD').value = formatDateDisplay(pd);
           else document.getElementById('fD').value = p.date;
         }
