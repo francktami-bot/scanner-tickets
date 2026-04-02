@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Scanner Tickets — Ocean Skills</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1923;--card:#1a2535;--bd:#2a3a50;--bl:#3b82f6;--gr:#10b981;--tx:#e2e8f0;--mu:#64748b}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding-bottom:90px}
+header{background:var(--card);border-bottom:1px solid var(--bd);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700}
+header p{font-size:11px;color:var(--mu)}
+.badge{background:var(--bl);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:8px}
+.wrap{padding:14px;max-width:500px;margin:0 auto}
+.panel{display:none}
+.panel.on{display:block}
+.btn{width:100%;border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;margin-bottom:10px;transition:.15s}
+.btn:active{opacity:.8;transform:scale(.98)}
+.bl{background:var(--bl);color:#fff}
+.gr{background:var(--gr);color:#fff}
+.gh{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.fields{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--mu);margin-bottom:4px}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:14px;font-family:inherit}
+.field input:focus,.field select:focus{outline:none;border-color:var(--bl)}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1}
+.pbox{background:#0c1f12;border:1px solid #1a4a2a;border-radius:12px;padding:14px;margin-bottom:14px}
+.pbox .lb{font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.pbox .pt{font-size:14px;font-weight:600;color:#86efac}
+.pbox .fn{font-size:12px;color:var(--mu);margin-top:4px;font-family:monospace;word-break:break-all}
+.ia-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:6px}
+.ia-btn{background:var(--bl);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.ia-btn:disabled{opacity:.5;cursor:default}
+.err{background:#2a1515;border:1px solid #5a2020;border-radius:10px;padding:10px 14px;font-size:13px;color:#fca5a5;display:none}
+.sbox{border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:10px}
+.sup{background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd}
+.sok{background:#0c1f12;border:1px solid #10b981;color:#4ade80}
+.serr{background:#2a1515;border:1px solid #ef4444;color:#fca5a5}
+#resultImg{width:100%;border-radius:10px;border:2px solid var(--bl);display:none;margin:10px 0}
+canvas{display:none}
+.drive-banner{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.drive-banner .info{flex:1}
+.drive-banner .info b{display:block;font-size:14px;font-weight:700}
+.drive-banner .info span{font-size:12px;color:var(--mu)}
+.drive-banner button{background:var(--bl);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.locale-bar{display:flex;gap:6px;margin-bottom:10px}
+.locale-bar button{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid var(--bd);background:var(--card);color:var(--mu);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:.15s}
+.locale-bar button.active{border-color:var(--bl);background:#1e3050;color:#fff}
+.locale-bar button:active{opacity:.8}
+.tog{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin-bottom:10px;font-size:13px;color:var(--mu)}
+.sw{position:relative;width:44px;height:24px}
+.sw input{opacity:0;width:0;height:0}
+.track{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--bd);border-radius:24px;transition:.2s}
+.track:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.sw input:checked+.track{background:var(--bl)}
+.sw input:checked+.track:before{transform:translateX(20px)}
+.dbox{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;text-align:center}
+.dbox .ico{font-size:40px;margin-bottom:8px}
+.dbox h2{font-size:18px;margin-bottom:6px}
+.fnbadge{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:12px;font-family:monospace;color:#fbbf24;word-break:break-all;margin:10px 0}
+.bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));gap:10px;z-index:999}
+video{width:100%;border-radius:12px;display:none}
+#camActions{display:none;gap:8px;margin-top:8px}
+#errCam{color:#fca5a5;font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:20px">🧾</span>
+  <div><h1>Scanner Tickets<span class="badge">v1.6</span></h1><p>Ocean Skills — Compta 2026</p></div>
+</header>
+
+<canvas id="snapCv"></canvas>
+
+<div class="wrap">
+
+<!-- STEP CONFIG : Clé API -->
+<div class="panel" id="pConfig">
+  <div style="background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:14px">
+    <div style="font-size:17px;font-weight:700;margin-bottom:8px">🔑 Clé API Anthropic</div>
+    <p style="font-size:13px;color:var(--mu);margin-bottom:14px;line-height:1.5">Nécessaire pour l'analyse automatique. Va sur console.anthropic.com pour la récupérer.</p>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." style="width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:12px;color:var(--tx);font-size:14px;margin-bottom:10px">
+    <button class="btn bl" onclick="saveApiKey()">Enregistrer et continuer</button>
+  </div>
+</div>
+
+<!-- STEP DRIVE : Connexion Google Drive -->
+<div class="panel" id="pDrive">
+  <div style="background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">📁</div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:8px">Connexion Google Drive</div>
+    <p style="font-size:13px;color:var(--mu);line-height:1.6;margin-bottom:24px">Autorise Drive pour que les PDFs soient déposés automatiquement dans le bon dossier compta.</p>
+  </div>
+  <button class="btn gr" id="btnDriveConnect" onclick="connectGoogle()">🔗 Autoriser Google Drive</button>
+  <p style="font-size:12px;color:var(--mu);text-align:center;margin-top:8px">Une fenêtre Google va s'ouvrir</p>
+</div>
+
+<!-- STEP 0 : Accueil / Caméra -->
+<div class="panel" id="p0">
+  <div class="drive-banner" id="driveBanner">
+    <div style="font-size:24px">📁</div>
+    <div class="info">
+      <b>Google Drive</b>
+      <span id="driveMsg">Non connecté</span>
+    </div>
+    <button id="driveBtnConnect" onclick="connectGoogle()">🔗 Connecter</button>
+  </div>
+
+  <div style="background:var(--card);border:2px dashed var(--bd);border-radius:14px;padding:30px 20px;text-align:center;margin-bottom:14px">
+    <div style="font-size:36px;margin-bottom:8px">📷</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Photo du ticket</div>
+    <p style="font-size:13px;color:var(--mu)">Pose le ticket sur une surface sombre et cadre-le entièrement</p>
+  </div>
+
+  <video id="vid" playsinline autoplay muted></video>
+  <div id="errCam"></div>
+  <div id="camActions">
+    <button class="btn gr" onclick="doSnap()">📸 Capturer</button>
+    <button class="btn gh" onclick="stopCam()">Annuler</button>
+  </div>
+
+  <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Photo d'un ticket papier</button>
+
+  <div style="display:flex;align-items:center;gap:10px;margin:6px 0 10px">
+    <div style="flex:1;height:1px;background:var(--bd)"></div>
+    <span style="font-size:12px;color:var(--mu)">ou</span>
+    <div style="flex:1;height:1px;background:var(--bd)"></div>
+  </div>
+
+  <button class="btn gh" id="btnPdfImport" onclick="triggerPdfImport()" style="border-color:#f59e0b50">📎 Importer une facture PDF</button>
+  <input type="file" id="pdfInput" accept="application/pdf,.pdf" style="display:none" onchange="handlePDF(this)">
+</div>
+
+<!-- STEP 1 : Recadrage + champs (ticket photo) -->
+<div class="panel" id="p1">
+  <p style="font-size:12px;color:var(--mu);text-align:center;margin-bottom:8px">Ajuste les coins du cadre bleu</p>
+  <div id="cropWrap">
+    <canvas id="cropCv"></canvas>
+  </div>
+  <div class="tog">
+    <span>🖤 Fond noir hors ticket</span>
+    <label class="sw"><input type="checkbox" id="bgTog" checked onchange="redraw()"><span class="track"></span></label>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🌍 Pays / devise du ticket</div>
+  <div class="locale-bar" id="localeBar">
+    <button onclick="setLocale('FR')" id="loc_FR" class="active">🇫🇷 France<br><span style="font-size:11px;color:var(--mu)">EUR</span></button>
+    <button onclick="setLocale('US')" id="loc_US">🇺🇸 USA<br><span style="font-size:11px;color:var(--mu)">USD</span></button>
+    <button onclick="setLocale('CA')" id="loc_CA">🇨🇦 Canada<br><span style="font-size:11px;color:var(--mu)">CAD</span></button>
+    <button onclick="setLocale('GB')" id="loc_GB">🇬🇧 UK<br><span style="font-size:11px;color:var(--mu)">GBP</span></button>
+  </div>
+
+  <div class="ia-row">
+    <span>✨ Remplissage auto par IA</span>
+    <button class="ia-btn" id="iaBtn" onclick="runIA()">Analyser</button>
+  </div>
+  <div id="iaMsg" style="font-size:12px;min-height:16px;margin-bottom:8px"></div>
+
+  <div class="fields">
+    <div class="field"><label>🏪 Établissement</label><input id="fE" type="text" placeholder="Ex: Le Cargo" oninput="updPath()"></div>
+    <div class="field-row">
+      <div class="field"><label>📅 Date</label><input id="fD" type="text" placeholder="JJ/MM/AAAA" oninput="updPath()"></div>
+      <div class="field" style="max-width:110px"><label>💱 Devise</label>
+        <select id="fCur" onchange="updPath()">
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label id="totalLabel">💶 Total TTC</label><input id="fT" type="text" placeholder="171,70" inputmode="decimal" oninput="updPath()"></div>
+  </div>
+
+  <div class="pbox">
+    <div class="lb">📁 Destination Drive</div>
+    <div class="pt" id="pPth">—</div>
+    <div class="fn" id="pFn">—</div>
+  </div>
+  <div class="err" id="errGen"></div>
+</div>
+
+<!-- STEP PDF : Import facture PDF -->
+<div class="panel" id="pPdf">
+  <div style="background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px;text-align:center">
+    <div style="font-size:28px;margin-bottom:6px">📄</div>
+    <div style="font-size:14px;font-weight:700" id="pdfFileName">—</div>
+    <div style="font-size:12px;color:var(--mu)" id="pdfFileSize">—</div>
+  </div>
+
+  <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🌍 Devise de la facture</div>
+  <div class="locale-bar" id="localeBarPdf">
+    <button onclick="setLocalePdf('FR')" id="loc2_FR" class="active">🇫🇷 EUR</button>
+    <button onclick="setLocalePdf('US')" id="loc2_US">🇺🇸 USD</button>
+    <button onclick="setLocalePdf('CA')" id="loc2_CA">🇨🇦 CAD</button>
+    <button onclick="setLocalePdf('GB')" id="loc2_GB">🇬🇧 GBP</button>
+  </div>
+
+  <div class="ia-row">
+    <span>✨ Analyse automatique</span>
+    <button class="ia-btn" id="iaBtnPdf" onclick="runPdfIA()">Analyser</button>
+  </div>
+  <div id="iaMsgPdf" style="font-size:12px;min-height:16px;margin-bottom:8px"></div>
+
+  <div class="fields">
+    <div class="field"><label>🏪 Établissement</label><input id="fE2" type="text" placeholder="Ex: Vimeo" oninput="updPathPdf()"></div>
+    <div class="field-row">
+      <div class="field"><label>📅 Date</label><input id="fD2" type="text" placeholder="JJ/MM/AAAA" oninput="updPathPdf()"></div>
+      <div class="field" style="max-width:110px"><label>💱 Devise</label>
+        <select id="fCur2" onchange="updPathPdf()">
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="CAD">CAD</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label id="totalLabelPdf">💶 Total TTC</label><input id="fT2" type="text" placeholder="14.31" inputmode="decimal" oninput="updPathPdf()"></div>
+  </div>
+
+  <div class="pbox">
+    <div class="lb">📁 Destination Drive</div>
+    <div class="pt" id="pPthPdf">—</div>
+    <div class="fn" id="pFnPdf">—</div>
+  </div>
+  <div class="err" id="errPdf"></div>
+</div>
+
+<!-- STEP 2 : Résultat -->
+<div class="panel" id="p2">
+  <div class="dbox">
+    <div class="ico" id="dIco">⏳</div>
+    <h2 id="dTitle">Envoi en cours…</h2>
+    <div class="fnbadge" id="dFn">—</div>
+    <img id="resultImg" alt="ticket">
+    <div class="sbox sup" id="statusBox">⏳ Envoi vers Google Drive…</div>
+    <div id="successBlock" style="display:none;margin-top:10px">
+      <button class="btn gh" style="font-size:13px" onclick="window.open(driveUrl,'_blank')">📂 Voir dans Drive</button>
+    </div>
+    <button class="btn gr" style="margin-top:10px" onclick="resetToHome()">🧾 Scanner un autre ticket</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- Barre fixe step 1 photo -->
+<div class="bar" id="b1" style="display:none">
+  <button class="btn gh" style="max-width:90px" onclick="resetToHome()">← Retour</button>
+  <button class="btn gr" style="flex:1" id="btnGen" onclick="generate()">📄 Générer et envoyer</button>
+</div>
+
+<!-- Barre fixe step PDF -->
+<div class="bar" id="bPdf" style="display:none">
+  <button class="btn gh" style="max-width:90px" onclick="resetToHome()">← Retour</button>
+  <button class="btn gr" style="flex:1" id="btnGenPdf" onclick="generatePdf()">📄 Renommer et envoyer</button>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────
+var GOOGLE_CLIENT_ID = '1075001419936-emgoarlug8jnvmqnhc32ro58lmlhb2qh.apps.googleusercontent.com';
+var SCOPES = 'https://www.googleapis.com/auth/drive.file';
+var MONTHS = {1:'01-Janvier',2:'02-Février',3:'03-Mars',4:'04-Avril',5:'05-Mai',6:'06-Juin',7:'07-Juillet',8:'08-Août',9:'09-Septembre',10:'10-Octobre',11:'11-Novembre',12:'12-Décembre'};
+var MOIS = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+var ACHAT = {
+  '2026': {
+    '01-Janvier 2026': '14vABkwN0X7s_9gU-2WW6Qka9L-OevFAY',
+    '02-Février 2026': '1X8ku8f-pM_jfQC2K8SmtuGuLH73EcCqE',
+    '03-Mars 2026': '1S1XelTqSLoK_MvB3Mm-dRiaQgxyYq3NN',
+    '04-Avril 2026': '1Rc77ZtUR2u_PGr73U17-H5mPHVQM4HQq',
+    '05-Mai 2026': '19-WK0nWpx-Vq8RLY3PaR4lFf4TPdDTcO',
+    '06-Juin 2026': '1eqtZCa8D4fUFVIjg2GvJBwhmrZA48u8n',
+    '07-Juillet 2026': '1w6Rk7-f14g-Hl3vJFBMllQrx_VSfrBQH',
+    '08-Août 2026': '1QWqcu_1zfUA9OM-qw3VCivklhhNXe7an',
+    '09-Septembre 2026': '1uN2lhhrnBElCNKstoZUpo5YOJcYYg-ak',
+    '10-Octobre 2026': '1TL8BTxrHHETGxYz4Z8ESJgxeSWdRut8Z',
+    '11-Novembre 2026': '1RMJQtD4KE4mYsNhz26oJD_H6vQNhfQk_',
+    '12-Décembre 2026': '10r48gLXDoXwz9hamdGQT_dUxeIyYudGg'
+  }
+};
+var ROOT = '1h1IcvWtfrgATFa2VeZAb1p6bnEkaVXMq';
+
+// ── Locale config ──────────────────────────────────────────
+var LOCALES = {
+  FR: {cur:'EUR', sym:'euros', dateFmt:'DD/MM/YYYY', totalPh:'171,70', curLabel:'Total TTC (EUR)'},
+  US: {cur:'USD', sym:'USD',   dateFmt:'MM/DD/YYYY', totalPh:'171.70', curLabel:'Total (USD $)'},
+  CA: {cur:'CAD', sym:'CAD',   dateFmt:'MM/DD/YYYY', totalPh:'171.70', curLabel:'Total (CAD $)'},
+  GB: {cur:'GBP', sym:'GBP',   dateFmt:'DD/MM/YYYY', totalPh:'171.70', curLabel:'Total (GBP)'}
+};
+var locale = 'FR';
+
+// ── State ──────────────────────────────────────────────────
+var API_KEY = localStorage.getItem('os_api_key') || '';
+var gToken = null;
+var tokenClient = null;
+var snapData = null;
+var pdfBlob = null;
+var driveUrl = '';
+var pdfName = '';
+var imgEl = null;
+var iw = 0;
+var ih = 0;
+var box = {x:0.05, y:0.05, w:0.9, h:0.9};
+var drag = null;
+var camStream = null;
+var cvDisplayW = 0;
+var cvDisplayH = 0;
+
+// PDF import state
+var pdfFile = null;
+var pdfText = '';
+
+// ── Init ───────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  var savedLoc = localStorage.getItem('os_locale');
+  if (savedLoc && LOCALES[savedLoc]) setLocale(savedLoc);
+  if (!API_KEY) {
+    goPanel('pConfig');
+  } else {
+    goPanel('pDrive');
+  }
+});
+
+// ── Navigation ─────────────────────────────────────────────
+function goPanel(id) {
+  var panels = ['pConfig','pDrive','p0','p1','pPdf','p2'];
+  for (var i = 0; i < panels.length; i++) {
+    var el = document.getElementById(panels[i]);
+    if (el) el.className = 'panel' + (panels[i] === id ? ' on' : '');
+  }
+  document.getElementById('b1').style.display = (id === 'p1') ? 'flex' : 'none';
+  document.getElementById('bPdf').style.display = (id === 'pPdf') ? 'flex' : 'none';
+  window.scrollTo(0, 0);
+}
+
+function resetToHome() {
+  stopCam();
+  goPanel('p0');
+}
+
+// ── API Key ────────────────────────────────────────────────
+function saveApiKey() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  if (!k || !k.startsWith('sk-')) {
+    alert('Cle invalide (doit commencer par sk-)');
+    return;
+  }
+  localStorage.setItem('os_api_key', k);
+  API_KEY = k;
+  goPanel('pDrive');
+}
+
+// ── Google Drive OAuth ─────────────────────────────────────
+function connectGoogle() {
+  var btn = document.getElementById('btnDriveConnect');
+  if (btn) { btn.textContent = '⏳ Connexion…'; btn.disabled = true; }
+
+  if (!tokenClient) {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: SCOPES,
+      callback: function(resp) {
+        if (resp.error) {
+          if (btn) { btn.textContent = '⚠️ Réessayer'; btn.disabled = false; btn.style.background = '#ef4444'; }
+          return;
+        }
+        gToken = resp.access_token;
+        // Update Drive banner on p0
+        var banner = document.getElementById('driveBanner');
+        var msg = document.getElementById('driveMsg');
+        var bc = document.getElementById('driveBtnConnect');
+        if (banner) { banner.style.borderColor = '#10b981'; banner.style.background = '#0c1f12'; }
+        if (msg) { msg.textContent = '✅ Connecté'; msg.style.color = '#4ade80'; }
+        if (bc) { bc.textContent = '✅'; bc.style.background = '#10b981'; }
+        goPanel('p0');
+      }
+    });
+  }
+  tokenClient.requestAccessToken();
+}
+
+// ── Camera ─────────────────────────────────────────────────
+function startCam() {
+  document.getElementById('errCam').textContent = '';
+  document.getElementById('btnStartCam').style.display = 'none';
+  navigator.mediaDevices.getUserMedia({
+    video: {facingMode:'environment', width:{ideal:1920}}
+  })
+  .then(function(stream) {
+    camStream = stream;
+    var v = document.getElementById('vid');
+    v.srcObject = stream;
+    v.style.display = 'block';
+    document.getElementById('camActions').style.display = 'flex';
+  })
+  .catch(function(e) {
+    document.getElementById('errCam').textContent = 'Camera : ' + e.message;
+    document.getElementById('btnStartCam').style.display = 'flex';
+  });
+}
+
+function stopCam() {
+  if (camStream) {
+    camStream.getTracks().forEach(function(t) { t.stop(); });
+    camStream = null;
+  }
+  var v = document.getElementById('vid');
+  v.style.display = 'none';
+  v.srcObject = null;
+  document.getElementById('btnStartCam').style.display = 'flex';
+  document.getElementById('camActions').style.display = 'none';
+}
+
+function doSnap() {
+  var v = document.getElementById('vid');
+  var c = document.getElementById('snapCv');
+  c.width = v.videoWidth;
+  c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  snapData = c.toDataURL('image/jpeg', 0.95);
+  stopCam();
+  box = {x:0.05, y:0.05, w:0.9, h:0.9};
+  document.getElementById('fE').value = '';
+  document.getElementById('fD').value = todLocal();
+  document.getElementById('fT').value = '';
+  document.getElementById('iaMsg').textContent = '';
+  document.getElementById('iaBtn').disabled = false;
+  document.getElementById('iaBtn').textContent = 'Analyser';
+  document.getElementById('errGen').style.display = 'none';
+  initCrop();
+  updPath();
+  goPanel('p1');
+}
+
+// ── Canvas crop ────────────────────────────────────────────
+function initCrop() {
+  var c = document.getElementById('cropCv');
+  var wrap = document.getElementById('cropWrap');
+  imgEl = new Image();
+  imgEl.onload = function() {
+    iw = imgEl.width;
+    ih = imgEl.height;
+    c.width = iw;
+    c.height = ih;
+    var wrapW = wrap.clientWidth || 340;
+    var ratio = ih / iw;
+    var displayW = wrapW;
+    var displayH = Math.round(wrapW * ratio);
+    var maxH = Math.round(window.innerHeight * 0.50);
+    if (displayH > maxH) {
+      displayH = maxH;
+      displayW = Math.round(maxH / ratio);
+    }
+    cvDisplayW = displayW;
+    cvDisplayH = displayH;
+    c.style.width = displayW + 'px';
+    c.style.height = displayH + 'px';
+    c.style.display = 'block';
+    redraw();
+  };
+  imgEl.src = snapData;
+}
+
+function redraw() {
+  if (!imgEl) return;
+  var c = document.getElementById('cropCv');
+  var ctx = c.getContext('2d');
+  var bgOn = document.getElementById('bgTog').checked;
+  ctx.clearRect(0, 0, iw, ih);
+  if (bgOn) {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, iw, ih);
+    ctx.drawImage(imgEl, box.x*iw, box.y*ih, box.w*iw, box.h*ih, box.x*iw, box.y*ih, box.w*iw, box.h*ih);
+  } else {
+    ctx.drawImage(imgEl, 0, 0);
+  }
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = Math.max(2, iw * 0.004);
+  ctx.strokeRect(box.x*iw, box.y*ih, box.w*iw, box.h*ih);
+  // Corner handles
+  var hs = Math.max(6, iw * 0.012);
+  ctx.fillStyle = '#3b82f6';
+  var corners = [
+    [box.x*iw, box.y*ih],
+    [(box.x+box.w)*iw, box.y*ih],
+    [box.x*iw, (box.y+box.h)*ih],
+    [(box.x+box.w)*iw, (box.y+box.h)*ih]
+  ];
+  for (var i = 0; i < corners.length; i++) {
+    ctx.fillRect(corners[i][0]-hs, corners[i][1]-hs, hs*2, hs*2);
+  }
+}
+
+// Touch/mouse crop interaction
+(function() {
+  var c = document.getElementById('cropCv');
+  function getPos(e) {
+    var t = e.touches ? e.touches[0] : e;
+    var r = c.getBoundingClientRect();
+    return {x: (t.clientX - r.left) / r.width, y: (t.clientY - r.top) / r.height};
+  }
+  function hitTest(p) {
+    var thr = 0.05;
+    var cx = [
+      {id:'tl', x:box.x, y:box.y},
+      {id:'tr', x:box.x+box.w, y:box.y},
+      {id:'bl', x:box.x, y:box.y+box.h},
+      {id:'br', x:box.x+box.w, y:box.y+box.h}
+    ];
+    for (var i = 0; i < cx.length; i++) {
+      if (Math.abs(p.x-cx[i].x) < thr && Math.abs(p.y-cx[i].y) < thr) return cx[i].id;
+    }
+    if (p.x > box.x && p.x < box.x+box.w && p.y > box.y && p.y < box.y+box.h) return 'move';
+    return null;
+  }
+  function onDown(e) {
+    e.preventDefault();
+    var p = getPos(e);
+    var hit = hitTest(p);
+    if (!hit) return;
+    drag = {type:hit, sx:p.x, sy:p.y, ob:{x:box.x, y:box.y, w:box.w, h:box.h}};
+  }
+  function onMove(e) {
+    if (!drag) return;
+    e.preventDefault();
+    var p = getPos(e);
+    var dx = p.x - drag.sx;
+    var dy = p.y - drag.sy;
+    var ob = drag.ob;
+    if (drag.type === 'move') {
+      box.x = Math.max(0, Math.min(1-ob.w, ob.x+dx));
+      box.y = Math.max(0, Math.min(1-ob.h, ob.y+dy));
+    } else if (drag.type === 'tl') {
+      box.x = Math.max(0, Math.min(ob.x+ob.w-0.05, ob.x+dx));
+      box.y = Math.max(0, Math.min(ob.y+ob.h-0.05, ob.y+dy));
+      box.w = ob.w - (box.x - ob.x);
+      box.h = ob.h - (box.y - ob.y);
+    } else if (drag.type === 'tr') {
+      box.w = Math.max(0.05, Math.min(1-ob.x, ob.w+dx));
+      box.y = Math.max(0, Math.min(ob.y+ob.h-0.05, ob.y+dy));
+      box.h = ob.h - (box.y - ob.y);
+    } else if (drag.type === 'bl') {
+      box.x = Math.max(0, Math.min(ob.x+ob.w-0.05, ob.x+dx));
+      box.w = ob.w - (box.x - ob.x);
+      box.h = Math.max(0.05, Math.min(1-ob.y, ob.h+dy));
+    } else if (drag.type === 'br') {
+      box.w = Math.max(0.05, Math.min(1-ob.x, ob.w+dx));
+      box.h = Math.max(0.05, Math.min(1-ob.y, ob.h+dy));
+    }
+    redraw();
+  }
+  function onUp() { drag = null; }
+  c.addEventListener('touchstart', onDown, {passive:false});
+  c.addEventListener('touchmove', onMove, {passive:false});
+  c.addEventListener('touchend', onUp);
+  c.addEventListener('mousedown', onDown);
+  c.addEventListener('mousemove', onMove);
+  c.addEventListener('mouseup', onUp);
+})();
+
+// ── Locale ─────────────────────────────────────────────────
+function setLocale(loc) {
+  locale = loc;
+  var cfg = LOCALES[loc];
+  var btns = document.querySelectorAll('#localeBar button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  var el = document.getElementById('loc_' + loc);
+  if (el) el.className = 'active';
+  document.getElementById('fD').placeholder = (cfg.dateFmt === 'MM/DD/YYYY') ? 'MM/DD/YYYY' : 'JJ/MM/AAAA';
+  document.getElementById('fT').placeholder = cfg.totalPh;
+  document.getElementById('fCur').value = cfg.cur;
+  document.getElementById('totalLabel').textContent = cfg.curLabel;
+  localStorage.setItem('os_locale', loc);
+  updPath();
+}
+
+function setLocalePdf(loc) {
+  locale = loc;
+  var cfg = LOCALES[loc];
+  var btns = document.querySelectorAll('#localeBarPdf button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  var el = document.getElementById('loc2_' + loc);
+  if (el) el.className = 'active';
+  document.getElementById('fCur2').value = cfg.cur;
+  document.getElementById('totalLabelPdf').textContent = cfg.curLabel;
+  localStorage.setItem('os_locale', loc);
+  updPathPdf();
+}
+
+// ── Date helpers ───────────────────────────────────────────
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function todLocal() {
+  var d = new Date();
+  return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear();
+}
+
+function parseDate(raw) {
+  if (!raw) return null;
+  var pts = raw.split(/[\/\-\.]/);
+  if (pts.length < 3) return null;
+  var a = parseInt(pts[0]) || 0;
+  var b = parseInt(pts[1]) || 0;
+  var c = parseInt(pts[2]) || 0;
+  if (c < 100) c = 2000 + c;
+  var day, month, year = c;
+  var fmt = LOCALES[locale].dateFmt;
+  if (fmt === 'MM/DD/YYYY') { month = a; day = b; }
+  else { day = a; month = b; }
+  if (month > 12 && day <= 12) { var tmp = month; month = day; day = tmp; }
+  if (month < 1 || month > 12) month = new Date().getMonth() + 1;
+  if (day < 1 || day > 31) day = 1;
+  return {day:day, month:month, year:year};
+}
+
+function parseDateDDMMYYYY(raw) {
+  if (!raw) return null;
+  var pts = raw.split(/[\/\-\.]/);
+  if (pts.length < 3) return null;
+  var a = parseInt(pts[0]) || 0;
+  var b = parseInt(pts[1]) || 0;
+  var c = parseInt(pts[2]) || 0;
+  if (c < 100) c = 2000 + c;
+  return {day:a, month:b, year:c};
+}
+
+function formatDateDisplay(parsed) {
+  if (!parsed) return '';
+  return pad(parsed.day) + '/' + pad(parsed.month) + '/' + parsed.year;
+}
+
+function formatDateForFilename(parsed) {
+  if (!parsed) return '00-mois-2026';
+  return pad(parsed.day) + '-' + (MOIS[parsed.month] || 'mois') + '-' + parsed.year;
+}
+
+// ── Currency for filename ──────────────────────────────────
+function curLabel(val, cur) {
+  var v = String(val || '0').replace(',', '.');
+  var n = parseFloat(v);
+  if (isNaN(n)) n = 0;
+  cur = cur || LOCALES[locale].cur;
+  if (cur === 'EUR') return n.toFixed(2).replace('.', ',') + ' euros';
+  if (cur === 'USD') return n.toFixed(2) + ' USD';
+  if (cur === 'CAD') return n.toFixed(2) + ' CAD';
+  if (cur === 'GBP') return n.toFixed(2) + ' GBP';
+  return n.toFixed(2) + ' ' + cur;
+}
+
+// ── Sanitize filename ──────────────────────────────────────
+function san(s) {
+  return s.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüçÀÂÄÉÈÊËÏÎÔÙÛÜÇ ]/g, '').replace(/\s+/g, '_').toUpperCase();
+}
+
+// ── Folder lookup ──────────────────────────────────────────
+function getFolderId(mk, yr) {
+  var yd = ACHAT[String(yr)];
+  return (yd && yd[mk]) ? yd[mk] : null;
+}
+
+// ── Update path display (photo) ────────────────────────────
+function updPath() {
+  var eRaw = document.getElementById('fE').value;
+  var dRaw = document.getElementById('fD').value;
+  var tRaw = document.getElementById('fT').value;
+  var cur = document.getElementById('fCur').value;
+  var parsed = parseDate(dRaw);
+  var etab = san(eRaw || 'ETABLISSEMENT');
+  var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
+  var cl = curLabel(tRaw, cur);
+  var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '??';
+  var fid = parsed ? getFolderId(mk, parsed.year) : null;
+  document.getElementById('pPth').textContent = fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré');
+  document.getElementById('pFn').textContent = etab + '_' + df + '_' + cl + '.pdf';
+}
+
+// ── Update path display (PDF) ──────────────────────────────
+function updPathPdf() {
+  var eRaw = document.getElementById('fE2').value;
+  var dRaw = document.getElementById('fD2').value;
+  var tRaw = document.getElementById('fT2').value;
+  var cur = document.getElementById('fCur2').value;
+  var parsed = parseDateDDMMYYYY(dRaw);
+  var etab = san(eRaw || 'ETABLISSEMENT');
+  var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
+  var cl = curLabel(tRaw, cur);
+  var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '??';
+  var fid = parsed ? getFolderId(mk, parsed.year) : null;
+  document.getElementById('pPthPdf').textContent = fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré');
+  document.getElementById('pFnPdf').textContent = etab + '_' + df + '_' + cl + '.pdf';
+}
+
+// ── IA Analysis (photo) ────────────────────────────────────
+function runIA() {
+  var btn = document.getElementById('iaBtn');
+  var msg = document.getElementById('iaMsg');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  msg.style.color = '#94a3b8';
+  msg.textContent = 'Analyse en cours…';
+
+  // Compress image before sending
+  var tempImg = new Image();
+  tempImg.onload = function() {
+    var maxW = 1200;
+    var scale = tempImg.width > maxW ? maxW / tempImg.width : 1;
+    var tc = document.createElement('canvas');
+    tc.width = Math.round(tempImg.width * scale);
+    tc.height = Math.round(tempImg.height * scale);
+    tc.getContext('2d').drawImage(tempImg, 0, 0, tc.width, tc.height);
+    var compressed = tc.toDataURL('image/jpeg', 0.7);
+    var b64 = compressed.split(',')[1];
+
+    var prompt = 'Analyse ce ticket de caisse. Reponds UNIQUEMENT avec un JSON valide (sans backticks) :\n{"establishment":"","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles:\n- establishment: nom de l\'enseigne\n- date: TOUJOURS au format DD/MM/YYYY avec annee en 4 chiffres\n- total: montant TTC, chiffres avec point decimal\n- currency: EUR, USD, CAD ou GBP';
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{role:'user', content:[
+          {type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}},
+          {type:'text', text:prompt}
+        ]}]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) {
+        msg.style.color = '#fca5a5';
+        msg.textContent = 'Erreur: ' + d.error.message;
+        btn.textContent = 'Réessayer';
+        btn.disabled = false;
+        return;
+      }
+      var txt = '';
+      for (var i = 0; i < (d.content || []).length; i++) {
+        if (d.content[i].type === 'text') txt = d.content[i].text;
+      }
+      try {
+        var clean = txt.replace(/```[a-z]*/gi, '').replace(/```/g, '');
+        var m = clean.match(/\{[\s\S]*\}/);
+        var p = JSON.parse(m ? m[0] : clean);
+        if (p.establishment) document.getElementById('fE').value = p.establishment;
+        if (p.date) {
+          var pd = parseDateDDMMYYYY(p.date);
+          if (pd) document.getElementById('fD').value = formatDateDisplay(pd);
+          else document.getElementById('fD').value = p.date;
+        }
+        if (p.total) document.getElementById('fT').value = p.total;
+        if (p.currency) {
+          var det = null;
+          var keys = Object.keys(LOCALES);
+          for (var j = 0; j < keys.length; j++) {
+            if (LOCALES[keys[j]].cur === p.currency) { det = keys[j]; break; }
+          }
+          if (det) setLocale(det);
+          document.getElementById('fCur').value = p.currency;
+        }
+        msg.style.color = '#4ade80';
+        msg.textContent = '✅ Champs remplis automatiquement';
+        updPath();
+      } catch(ex) {
+        msg.style.color = '#fbbf24';
+        msg.textContent = '⚠️ Analyse partielle — verifie les champs';
+      }
+      btn.textContent = 'Réessayer';
+      btn.disabled = false;
+    })
+    .catch(function(err) {
+      msg.style.color = '#fca5a5';
+      msg.textContent = 'Erreur réseau: ' + err.message;
+      btn.textContent = 'Réessayer';
+      btn.disabled = false;
+    });
+  };
+  tempImg.src = snapData;
+}
+
+// ── Generate PDF + Upload (photo) ──────────────────────────
+function generate() {
+  var eRaw = document.getElementById('fE').value.trim();
+  var dRaw = document.getElementById('fD').value.trim();
+  var tRaw = document.getElementById('fT').value.trim();
+  var cur = document.getElementById('fCur').value;
+  var errEl = document.getElementById('errGen');
+
+  if (!eRaw) { errEl.textContent = '❌ Établissement manquant'; errEl.style.display = 'block'; return; }
+  if (!dRaw) { errEl.textContent = '❌ Date manquante'; errEl.style.display = 'block'; return; }
+  if (!tRaw) { errEl.textContent = '❌ Total manquant'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  var parsed = parseDate(dRaw);
+  var etab = san(eRaw);
+  var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
+  var cl = curLabel(tRaw, cur);
+  pdfName = etab + '_' + df + '_' + cl + '.pdf';
+  var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '';
+  var fid = parsed ? getFolderId(mk, parsed.year) : null;
+  var folderId = fid || ROOT;
+  driveUrl = 'https://drive.google.com/drive/folders/' + folderId;
+
+  // Create cropped image
+  var cropCv = document.createElement('canvas');
+  var cx = Math.round(box.x * iw);
+  var cy = Math.round(box.y * ih);
+  var cw = Math.round(box.w * iw);
+  var ch = Math.round(box.h * ih);
+  cropCv.width = cw;
+  cropCv.height = ch;
+  cropCv.getContext('2d').drawImage(imgEl, cx, cy, cw, ch, 0, 0, cw, ch);
+  var cropData = cropCv.toDataURL('image/jpeg', 0.92);
+
+  // Show result panel
+  goPanel('p2');
+  document.getElementById('dIco').textContent = '⏳';
+  document.getElementById('dTitle').textContent = 'Envoi en cours…';
+  document.getElementById('dFn').textContent = pdfName;
+  document.getElementById('resultImg').src = cropData;
+  document.getElementById('resultImg').style.display = 'block';
+  document.getElementById('statusBox').className = 'sbox sup';
+  document.getElementById('statusBox').textContent = '⏳ Génération du PDF…';
+  document.getElementById('successBlock').style.display = 'none';
+
+  // Generate PDF with jsPDF
+  try {
+    var jsPDF = window.jspdf.jsPDF;
+    var imgW = cw;
+    var imgH = ch;
+    var pdfW = 210; // A4 mm
+    var pdfH = Math.round(imgH * pdfW / imgW);
+    if (pdfH > 297) { pdfH = 297; pdfW = Math.round(imgW * pdfH / imgH); }
+    var doc = new jsPDF({orientation: pdfH > pdfW ? 'portrait' : 'landscape', unit:'mm', format:[pdfW, pdfH]});
+    doc.addImage(cropData, 'JPEG', 0, 0, pdfW, pdfH);
+    pdfBlob = doc.output('blob');
+
+    if (gToken) {
+      uploadToDrive(pdfBlob, pdfName, folderId);
+    } else {
+      document.getElementById('dIco').textContent = '✅';
+      document.getElementById('dTitle').textContent = 'PDF généré !';
+      document.getElementById('statusBox').className = 'sbox serr';
+      document.getElementById('statusBox').textContent = '⚠️ Drive non connecté — PDF en téléchargement';
+      downloadBlob(pdfBlob, pdfName);
+    }
+  } catch(ex) {
+    document.getElementById('dIco').textContent = '❌';
+    document.getElementById('dTitle').textContent = 'Erreur';
+    document.getElementById('statusBox').className = 'sbox serr';
+    document.getElementById('statusBox').textContent = 'Erreur PDF: ' + ex.message;
+  }
+}
+
+// ── PDF Import ─────────────────────────────────────────────
+function triggerPdfImport() {
+  document.getElementById('pdfInput').click();
+}
+
+function handlePDF(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  pdfFile = f;
+  document.getElementById('pdfFileName').textContent = f.name;
+  document.getElementById('pdfFileSize').textContent = Math.round(f.size / 1024) + ' KB';
+  document.getElementById('fE2').value = '';
+  document.getElementById('fD2').value = '';
+  document.getElementById('fT2').value = '';
+  document.getElementById('iaMsgPdf').textContent = '';
+  document.getElementById('iaBtnPdf').disabled = false;
+  document.getElementById('iaBtnPdf').textContent = 'Analyser';
+  document.getElementById('errPdf').style.display = 'none';
+  // Sync locale buttons
+  var btns = document.querySelectorAll('#localeBarPdf button');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = ''; }
+  var el = document.getElementById('loc2_' + locale);
+  if (el) el.className = 'active';
+  var cfg = LOCALES[locale];
+  document.getElementById('fCur2').value = cfg.cur;
+  document.getElementById('totalLabelPdf').textContent = cfg.curLabel;
+  updPathPdf();
+  goPanel('pPdf');
+  // Extract text from PDF
+  extractPdfText(f);
+}
+
+function extractPdfText(file) {
+  var reader = new FileReader();
+  reader.onload = function() {
+    var arr = new Uint8Array(reader.result);
+    if (typeof pdfjsLib === 'undefined') { pdfText = ''; return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.getDocument({data:arr}).promise.then(function(doc) {
+      var pages = [];
+      var total = doc.numPages;
+      function getPage(n) {
+        if (n > total) {
+          pdfText = pages.join('\n');
+          if (pdfText.length > 20) runPdfIA();
+          return;
+        }
+        doc.getPage(n).then(function(page) {
+          page.getTextContent().then(function(tc) {
+            pages.push(tc.items.map(function(it) { return it.str; }).join(' '));
+            getPage(n + 1);
+          });
+        });
+      }
+      getPage(1);
+    }).catch(function() { pdfText = ''; });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── IA Analysis (PDF) ──────────────────────────────────────
+function runPdfIA() {
+  var btn = document.getElementById('iaBtnPdf');
+  var msg = document.getElementById('iaMsgPdf');
+  if (!pdfText || pdfText.length < 10) {
+    msg.style.color = '#fbbf24';
+    msg.textContent = 'Texte PDF non extrait — remplis manuellement';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  msg.style.color = '#94a3b8';
+  msg.textContent = 'Analyse en cours…';
+
+  var prompt = 'Voici le texte extrait d\'une facture PDF. Extrais les informations et renvoie UNIQUEMENT ce JSON (sans backticks):\n{"establishment":"NOM","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles:\n- establishment: nom de la societe qui facture\n- date: date de facturation au format DD/MM/YYYY avec annee en 4 chiffres. Si la date source est en format US (MM/DD/YYYY), convertis-la.\n- total: montant TTC final, chiffres avec point decimal\n- currency: EUR, USD, CAD ou GBP\n\nTexte:\n' + pdfText.substring(0, 3000);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 300,
+      messages: [{role:'user', content:prompt}]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) {
+      msg.style.color = '#fca5a5';
+      msg.textContent = 'Erreur: ' + d.error.message;
+      btn.textContent = 'Réessayer';
+      btn.disabled = false;
+      return;
+    }
+    var txt = '';
+    for (var i = 0; i < (d.content || []).length; i++) {
+      if (d.content[i].type === 'text') txt = d.content[i].text;
+    }
+    try {
+      var clean = txt.replace(/```[a-z]*/gi, '').replace(/```/g, '');
+      var m = clean.match(/\{[\s\S]*\}/);
+      var p = JSON.parse(m ? m[0] : clean);
+      if (p.establishment) document.getElementById('fE2').value = p.establishment;
+      if (p.date) {
+        var pd = parseDateDDMMYYYY(p.date);
+        if (pd) document.getElementById('fD2').value = formatDateDisplay(pd);
+        else document.getElementById('fD2').value = p.date;
+      }
+      if (p.total) document.getElementById('fT2').value = p.total;
+      if (p.currency) {
+        var det = null;
+        var keys = Object.keys(LOCALES);
+        for (var j = 0; j < keys.length; j++) {
+          if (LOCALES[keys[j]].cur === p.currency) { det = keys[j]; break; }
+        }
+        if (det) setLocalePdf(det);
+        document.getElementById('fCur2').value = p.currency;
+      }
+      msg.style.color = '#4ade80';
+      msg.textContent = '✅ Champs remplis automatiquement';
+      updPathPdf();
+    } catch(ex) {
+      msg.style.color = '#fbbf24';
+      msg.textContent = '⚠️ Analyse partielle — verifie les champs';
+    }
+    btn.textContent = 'Réessayer';
+    btn.disabled = false;
+  })
+  .catch(function(err) {
+    msg.style.color = '#fca5a5';
+    msg.textContent = 'Erreur réseau: ' + err.message;
+    btn.textContent = 'Réessayer';
+    btn.disabled = false;
+  });
+}
+
+// ── Generate + Upload (PDF import) ─────────────────────────
+function generatePdf() {
+  var eRaw = document.getElementById('fE2').value.trim();
+  var dRaw = document.getElementById('fD2').value.trim();
+  var tRaw = document.getElementById('fT2').value.trim();
+  var cur = document.getElementById('fCur2').value;
+  var errEl = document.getElementById('errPdf');
+
+  if (!eRaw) { errEl.textContent = '❌ Établissement manquant'; errEl.style.display = 'block'; return; }
+  if (!dRaw) { errEl.textContent = '❌ Date manquante'; errEl.style.display = 'block'; return; }
+  if (!tRaw) { errEl.textContent = '❌ Total manquant'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+
+  var parsed = parseDateDDMMYYYY(dRaw);
+  var etab = san(eRaw);
+  var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
+  var cl = curLabel(tRaw, cur);
+  pdfName = etab + '_' + df + '_' + cl + '.pdf';
+  var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '';
+  var fid = parsed ? getFolderId(mk, parsed.year) : null;
+  var folderId = fid || ROOT;
+  driveUrl = 'https://drive.google.com/drive/folders/' + folderId;
+
+  goPanel('p2');
+  document.getElementById('dIco').textContent = '⏳';
+  document.getElementById('dTitle').textContent = 'Envoi en cours…';
+  document.getElementById('dFn').textContent = pdfName;
+  document.getElementById('resultImg').style.display = 'none';
+  document.getElementById('statusBox').className = 'sbox sup';
+  document.getElementById('statusBox').textContent = '⏳ Envoi du PDF original…';
+  document.getElementById('successBlock').style.display = 'none';
+
+  if (gToken && pdfFile) {
+    uploadToDrive(pdfFile, pdfName, folderId);
+  } else if (pdfFile) {
+    document.getElementById('dIco').textContent = '✅';
+    document.getElementById('dTitle').textContent = 'PDF prêt !';
+    document.getElementById('statusBox').className = 'sbox serr';
+    document.getElementById('statusBox').textContent = '⚠️ Drive non connecté';
+  }
+}
+
+// ── Upload to Drive ────────────────────────────────────────
+function uploadToDrive(blob, filename, folderId) {
+  document.getElementById('statusBox').textContent = '⏳ Upload vers Drive…';
+  var meta = {name:filename, mimeType:'application/pdf', parents:[folderId]};
+  var form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], {type:'application/json'}));
+  form.append('file', blob);
+  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: {Authorization: 'Bearer ' + gToken},
+    body: form
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    document.getElementById('dIco').textContent = '✅';
+    document.getElementById('dTitle').textContent = 'Envoyé dans Drive !';
+    document.getElementById('statusBox').className = 'sbox sok';
+    document.getElementById('statusBox').textContent = '✅ ' + filename;
+    document.getElementById('successBlock').style.display = 'block';
+  })
+  .catch(function(err) {
+    document.getElementById('dIco').textContent = '⚠️';
+    document.getElementById('dTitle').textContent = 'Erreur upload';
+    document.getElementById('statusBox').className = 'sbox serr';
+    document.getElementById('statusBox').textContent = '❌ ' + err.message;
+    // Fallback: download
+    if (blob instanceof Blob) downloadBlob(blob, filename);
+  });
+}
+
+// ── Download fallback ──────────────────────────────────────
+function downloadBlob(blob, name) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
