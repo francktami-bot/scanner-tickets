@@ -79,7 +79,7 @@ video{width:100%;border-radius:12px;display:none}
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v1.7</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v1.8</span></h1><p>Ocean Skills — Compta 2026</p></div>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -334,7 +334,7 @@ window.addEventListener('load', function() {
   if (!API_KEY) {
     goPanel('pConfig');
   } else {
-    goPanel('pDrive');
+    goPanel('p0');
   }
 });
 
@@ -364,7 +364,7 @@ function saveApiKey() {
   }
   localStorage.setItem('os_api_key', k);
   API_KEY = k;
-  goPanel('pDrive');
+  goPanel('p0');
 }
 
 // ── Google Drive OAuth ─────────────────────────────────────
