@@ -79,7 +79,7 @@ video{width:100%;border-radius:12px;display:none}
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v1.8</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v1.9</span></h1><p>Ocean Skills — Compta 2026</p></div>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -306,8 +306,19 @@ var LOCALES = {
 };
 var locale = 'FR';
 
+// ── Cookie helpers (persist better than localStorage on iOS) ──
+function setCookie(name, val, days) {
+  var d = new Date();
+  d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+  document.cookie = name + '=' + encodeURIComponent(val) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
+}
+function getCookie(name) {
+  var m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return m ? decodeURIComponent(m[2]) : '';
+}
+
 // ── State ──────────────────────────────────────────────────
-var API_KEY = localStorage.getItem('os_api_key') || '';
+var API_KEY = localStorage.getItem('os_api_key') || getCookie('os_api_key') || '';
 var gToken = null;
 var tokenClient = null;
 var snapData = null;
@@ -329,8 +340,14 @@ var pdfText = '';
 
 // ── Init ───────────────────────────────────────────────────
 window.addEventListener('load', function() {
-  var savedLoc = localStorage.getItem('os_locale');
+  // Restore from cookie if localStorage was purged
+  if (!localStorage.getItem('os_api_key') && API_KEY) {
+    localStorage.setItem('os_api_key', API_KEY);
+  }
+  var savedLoc = localStorage.getItem('os_locale') || getCookie('os_locale');
   if (savedLoc && LOCALES[savedLoc]) setLocale(savedLoc);
+  // Pre-fill API key input if we have one (for re-validation)
+  if (API_KEY) document.getElementById('apiKeyInput').value = API_KEY;
   if (!API_KEY) {
     goPanel('pConfig');
   } else {
@@ -363,6 +380,7 @@ function saveApiKey() {
     return;
   }
   localStorage.setItem('os_api_key', k);
+  setCookie('os_api_key', k, 365);
   API_KEY = k;
   goPanel('p0');
 }
@@ -585,7 +603,7 @@ function setLocale(loc) {
   document.getElementById('fT').placeholder = cfg.totalPh;
   document.getElementById('fCur').value = cfg.cur;
   document.getElementById('totalLabel').textContent = cfg.curLabel;
-  localStorage.setItem('os_locale', loc);
+  localStorage.setItem('os_locale', loc); setCookie('os_locale', loc, 365);
   updPath();
 }
 
@@ -598,7 +616,7 @@ function setLocalePdf(loc) {
   if (el) el.className = 'active';
   document.getElementById('fCur2').value = cfg.cur;
   document.getElementById('totalLabelPdf').textContent = cfg.curLabel;
-  localStorage.setItem('os_locale', loc);
+  localStorage.setItem('os_locale', loc); setCookie('os_locale', loc, 365);
   updPathPdf();
 }
 
