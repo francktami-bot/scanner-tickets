@@ -79,7 +79,7 @@ video{width:100%;border-radius:12px;display:none}
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v1.9</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v2.0</span></h1><p>Ocean Skills — Compta 2026</p></div>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -636,10 +636,8 @@ function parseDate(raw) {
   var b = parseInt(pts[1]) || 0;
   var c = parseInt(pts[2]) || 0;
   if (c < 100) c = 2000 + c;
-  var day, month, year = c;
-  var fmt = LOCALES[locale].dateFmt;
-  if (fmt === 'MM/DD/YYYY') { month = a; day = b; }
-  else { day = a; month = b; }
+  // Always parse as DD/MM/YYYY (French format) regardless of locale
+  var day = a, month = b, year = c;
   if (month > 12 && day <= 12) { var tmp = month; month = day; day = tmp; }
   if (month < 1 || month > 12) month = new Date().getMonth() + 1;
   if (day < 1 || day > 31) day = 1;
