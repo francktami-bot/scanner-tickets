@@ -105,7 +105,7 @@ video{width:100%;border-radius:12px;display:none}
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v2.1</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v2.2</span></h1><p>Ocean Skills — Compta 2026</p></div>
   <button class="hbtn" onclick="openSuivi()">📋 Suivi</button>
 </header>
 
@@ -148,20 +148,11 @@ video{width:100%;border-radius:12px;display:none}
   <div style="background:var(--card);border:2px dashed var(--bd);border-radius:14px;padding:30px 20px;text-align:center;margin-bottom:14px">
     <div style="font-size:36px;margin-bottom:8px">📷</div>
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">Photo du ticket</div>
-    <p style="font-size:13px;color:var(--mu)">Pose le ticket sur une surface sombre et cadre-le entièrement</p>
+    <p style="font-size:13px;color:var(--mu);line-height:1.5">Ticket à plat sur une surface sombre, bien éclairé.<br>Remplis l'écran avec le ticket, touche-le pour la mise au point.</p>
   </div>
 
-  <video id="vid" playsinline autoplay muted></video>
   <div id="errCam"></div>
-
-  <!-- Fullscreen camera overlay -->
-  <div id="camOverlay" style="display:none" class="cam-fullscreen">
-    <video id="vidFS" playsinline autoplay muted style="flex:1;width:100%;object-fit:cover"></video>
-    <div class="cam-bar">
-      <button class="btn gh" style="max-width:100px" onclick="stopCam()">Annuler</button>
-      <button class="btn gr" style="flex:1" onclick="doSnap()">📸 Capturer</button>
-    </div>
-  </div>
+  <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
 
   <button class="btn bl" id="btnStartCam" onclick="startCam()">📷 Photo d'un ticket papier</button>
 
@@ -177,9 +168,14 @@ video{width:100%;border-radius:12px;display:none}
 
 <!-- STEP 1 : Recadrage + champs (ticket photo) -->
 <div class="panel" id="p1">
-  <p style="font-size:12px;color:var(--mu);text-align:center;margin-bottom:8px">Ajuste les coins du cadre bleu</p>
+  <p id="cropHint" style="font-size:12px;color:var(--mu);text-align:center;margin-bottom:8px">Ajuste les coins du cadre bleu</p>
   <div id="cropWrap">
     <canvas id="cropCv"></canvas>
+  </div>
+  <div class="sbox" id="qBox" style="display:none;margin-top:10px"></div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn gh" style="font-size:13px;min-height:44px;padding:10px" onclick="startCam()">📷 Reprendre la photo</button>
+    <button class="btn gh" style="font-size:13px;min-height:44px;padding:10px;max-width:120px" onclick="rotateWork()">↻ Pivoter</button>
   </div>
   <div class="tog">
     <span>🖤 Fond noir hors ticket</span>
@@ -461,114 +457,278 @@ function connectGoogle() {
   tokenClient.requestAccessToken();
 }
 
-// ── Camera ─────────────────────────────────────────────────
+// ── Photo : appareil photo natif de l'iPhone ───────────────
+// Avant la v2.2 l'app extrayait une image du flux vidéo (~1 Mpx, sans mise
+// au point dédiée). On passe par l'appareil photo natif : pleine résolution,
+// mise au point au toucher, flash, « Reprendre » intégré.
+var WORK_MAX = 3000;   // plus grand côté de l'image de travail (px)
+var PREV_MAX = 1200;   // plus grand côté de l'aperçu de recadrage (px)
+var prevEl = null;
+var pw = 0;
+var ph = 0;
+var quality = {blur: false, small: false};
+
 function startCam() {
-  document.getElementById('errCam').textContent = '';
-  document.getElementById('btnStartCam').style.display = 'none';
-  navigator.mediaDevices.getUserMedia({
-    video: {facingMode:'environment', width:{ideal:1920}}
-  })
-  .then(function(stream) {
-    camStream = stream;
-    var v = document.getElementById('vidFS');
-    v.srcObject = stream;
-    document.getElementById('camOverlay').style.display = 'flex';
-  })
-  .catch(function(e) {
-    document.getElementById('errCam').textContent = 'Camera : ' + e.message;
-    document.getElementById('btnStartCam').style.display = 'flex';
-  });
+  var i = document.getElementById('camInput');
+  i.value = '';
+  i.click();
 }
 
-function stopCam() {
-  if (camStream) {
-    camStream.getTracks().forEach(function(t) { t.stop(); });
-    camStream = null;
-  }
-  var v = document.getElementById('vidFS');
-  v.srcObject = null;
-  document.getElementById('camOverlay').style.display = 'none';
-  document.getElementById('btnStartCam').style.display = 'flex';
+// Conservé : appelé par la navigation (plus de flux vidéo à couper)
+function stopCam() {}
+
+function handlePhoto(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  var err = document.getElementById('errCam');
+  err.style.color = '#94a3b8';
+  err.textContent = '⏳ Chargement de la photo…';
+  var url = URL.createObjectURL(f);
+  var im = new Image();
+  im.onload = function() {
+    URL.revokeObjectURL(url);
+    var s = Math.min(1, WORK_MAX / Math.max(im.width, im.height));
+    var w = document.createElement('canvas');
+    w.width = Math.round(im.width * s);
+    w.height = Math.round(im.height * s);
+    var wc = w.getContext('2d');
+    wc.imageSmoothingQuality = 'high';
+    wc.drawImage(im, 0, 0, w.width, w.height);
+    err.textContent = '';
+    document.getElementById('fE').value = '';
+    document.getElementById('fD').value = todLocal();
+    document.getElementById('fT').value = '';
+    document.getElementById('iaMsg').textContent = '';
+    document.getElementById('iaBtn').disabled = false;
+    document.getElementById('iaBtn').textContent = 'Analyser';
+    document.getElementById('errGen').style.display = 'none';
+    setWork(w, true);
+    updPath();
+  };
+  im.onerror = function() {
+    URL.revokeObjectURL(url);
+    err.style.color = '#fca5a5';
+    err.textContent = 'Photo illisible — réessaie';
+  };
+  im.src = url;
 }
 
-function doSnap() {
-  var v = document.getElementById('vidFS');
-  var c = document.getElementById('snapCv');
-  c.width = v.videoWidth;
-  c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
-  snapData = c.toDataURL('image/jpeg', 0.95);
-  stopCam();
-  box = {x:0.05, y:0.05, w:0.9, h:0.9};
-  document.getElementById('fE').value = '';
-  document.getElementById('fD').value = todLocal();
-  document.getElementById('fT').value = '';
-  document.getElementById('iaMsg').textContent = '';
-  document.getElementById('iaBtn').disabled = false;
-  document.getElementById('iaBtn').textContent = 'Analyser';
-  document.getElementById('errGen').style.display = 'none';
-  initCrop();
-  updPath();
+// Installe une image de travail : aperçu, cadre automatique, contrôle qualité
+function setWork(w, autoBox) {
+  imgEl = w;
+  iw = w.width;
+  ih = w.height;
+  var ps = Math.min(1, PREV_MAX / Math.max(iw, ih));
+  prevEl = document.createElement('canvas');
+  pw = prevEl.width = Math.round(iw * ps);
+  ph = prevEl.height = Math.round(ih * ps);
+  var pc = prevEl.getContext('2d');
+  pc.imageSmoothingQuality = 'high';
+  pc.drawImage(w, 0, 0, pw, ph);
+  var det = autoBox ? detectTicket() : null;
+  box = det || {x:0.05, y:0.05, w:0.9, h:0.9};
+  document.getElementById('cropHint').textContent = det
+    ? 'Cadre posé automatiquement sur le ticket — ajuste les coins si besoin'
+    : 'Ajuste les coins du cadre bleu sur le ticket';
   goPanel('p1');
+  initCrop();
+  checkQuality();
+}
+
+function rotateWork() {
+  if (!imgEl) return;
+  var r = document.createElement('canvas');
+  r.width = ih;
+  r.height = iw;
+  var rc = r.getContext('2d');
+  rc.translate(ih, 0);
+  rc.rotate(Math.PI / 2);
+  rc.drawImage(imgEl, 0, 0);
+  setWork(r, true);
+}
+
+// Cadrage automatique : ticket clair sur fond sombre (seuil d'Otsu sur la luminance)
+function detectTicket() {
+  var sw = Math.min(160, pw);
+  var sh = Math.max(1, Math.round(ph * sw / pw));
+  var c = document.createElement('canvas');
+  c.width = sw;
+  c.height = sh;
+  var cx = c.getContext('2d');
+  cx.drawImage(prevEl, 0, 0, sw, sh);
+  var d = cx.getImageData(0, 0, sw, sh).data;
+  var n = sw * sh, lum = new Uint8Array(n), hist = new Array(256), i, t;
+  for (i = 0; i < 256; i++) hist[i] = 0;
+  for (i = 0; i < n; i++) {
+    lum[i] = (d[i*4] * 299 + d[i*4+1] * 587 + d[i*4+2] * 114) / 1000;
+    hist[lum[i]]++;
+  }
+  var sum = 0;
+  for (t = 0; t < 256; t++) sum += t * hist[t];
+  var sumB = 0, wB = 0, best = 0, thr = 127;
+  for (t = 0; t < 256; t++) {
+    wB += hist[t];
+    if (!wB) continue;
+    var wF = n - wB;
+    if (!wF) break;
+    sumB += t * hist[t];
+    var mB = sumB / wB, mF = (sum - sumB) / wF;
+    var v = wB * wF * (mB - mF) * (mB - mF);
+    if (v > best) { best = v; thr = t; }
+  }
+  var cols = new Array(sw), rows = new Array(sh), bright = 0, s0 = 0, s1 = 0, x, y;
+  for (x = 0; x < sw; x++) cols[x] = 0;
+  for (y = 0; y < sh; y++) rows[y] = 0;
+  for (y = 0; y < sh; y++) {
+    for (x = 0; x < sw; x++) {
+      var l = lum[y * sw + x];
+      if (l > thr) { cols[x]++; rows[y]++; bright++; s1 += l; } else { s0 += l; }
+    }
+  }
+  var frac = bright / n;
+  if (frac < 0.01 || frac > 0.80) return null;              // pas de ticket net sur fond sombre
+  if (s1 / bright - s0 / (n - bright) < 50) return null;    // contraste ticket/fond insuffisant
+  var mc = Math.max.apply(null, cols), mr = Math.max.apply(null, rows);
+  var x0 = 0, x1 = sw - 1, y0 = 0, y1 = sh - 1;
+  while (x0 < sw && cols[x0] < 0.35 * mc) x0++;
+  while (x1 > x0 && cols[x1] < 0.35 * mc) x1--;
+  while (y0 < sh && rows[y0] < 0.35 * mr) y0++;
+  while (y1 > y0 && rows[y1] < 0.35 * mr) y1--;
+  var m = 0.012;
+  var b = {
+    x: Math.max(0, x0 / sw - m), y: Math.max(0, y0 / sh - m),
+    w: (x1 - x0 + 1) / sw + 2 * m, h: (y1 - y0 + 1) / sh + 2 * m
+  };
+  if (b.x + b.w > 1) b.w = 1 - b.x;
+  if (b.y + b.h > 1) b.h = 1 - b.y;
+  if (b.w < 0.1 || b.h < 0.1) return null;
+  return b;
+}
+
+// Variance du laplacien d'une image en niveaux de gris
+function lapVar(g, w, h) {
+  var s = 0, s2 = 0, n = 0, x, y;
+  for (y = 1; y < h - 1; y++) {
+    for (x = 1; x < w - 1; x++) {
+      var i = y * w + x;
+      var v = 4 * g[i] - g[i-1] - g[i+1] - g[i-w] - g[i+w];
+      s += v; s2 += v * v; n++;
+    }
+  }
+  if (!n) return 0;
+  var mean = s / n;
+  return s2 / n - mean * mean;
+}
+function halve(g, w, h) {
+  var w2 = w >> 1, h2 = h >> 1, o = new Float32Array(w2 * h2), x, y;
+  for (y = 0; y < h2; y++) {
+    for (x = 0; x < w2; x++) {
+      var i = (y * 2) * w + x * 2;
+      o[y * w2 + x] = (g[i] + g[i+1] + g[i+w] + g[i+w+1]) / 4;
+    }
+  }
+  return {g: o, w: w2, h: h2};
+}
+
+// Indice de netteté du ticket cadré : part de détail fin présente dans l'image.
+// On compare le détail à demi-résolution et à quart de résolution : une photo
+// nette garde du détail fin (ratio élevé), une photo floue n'en a plus.
+function sharpness() {
+  var cx = Math.round(box.x * iw), cy = Math.round(box.y * ih);
+  var cw = Math.round(box.w * iw), ch = Math.round(box.h * ih);
+  var ww = Math.min(1600, cw), wh = Math.min(1600, ch);
+  if (ww < 64 || wh < 64) return null;
+  var sx = cx + Math.round((cw - ww) / 2), sy = cy + Math.round((ch - wh) / 2);
+  var d = imgEl.getContext('2d').getImageData(sx, sy, ww, wh).data;
+  var g = new Float32Array(ww * wh);
+  for (var i = 0; i < ww * wh; i++) g[i] = (d[i*4] * 299 + d[i*4+1] * 587 + d[i*4+2] * 114) / 1000;
+  var a = halve(g, ww, wh), b = halve(a.g, a.w, a.h);
+  var la = lapVar(a.g, a.w, a.h), lb = lapVar(b.g, b.w, b.h);
+  if (lb < 1) return null;   // zone sans texte : pas de mesure
+  return la / lb;
+}
+
+var BLUR_MAX = 0.16;   // en dessous : photo jugée floue (seuil estimé, à affiner à l'usage)
+var SMALL_MIN = 800;   // petit côté du ticket cadré, en px
+
+function checkQuality() {
+  var el = document.getElementById('qBox');
+  if (!imgEl) { el.style.display = 'none'; return; }
+  var cw = Math.round(box.w * iw), ch = Math.round(box.h * ih);
+  var r = null;
+  try { r = sharpness(); } catch (e) { r = null; }
+  quality = {blur: r != null && r < BLUR_MAX, small: Math.min(cw, ch) < SMALL_MIN, r: r};
+  var dims = cw + ' × ' + ch + ' px';
+  el.style.display = 'block';
+  if (quality.blur) {
+    el.className = 'sbox serr';
+    el.textContent = '⚠️ Photo probablement floue — reprends-la : téléphone immobile, touche le ticket à l\'écran pour faire la mise au point. (' + dims + ')';
+  } else if (quality.small) {
+    el.className = 'sbox serr';
+    el.textContent = '⚠️ Ticket trop petit dans l\'image (' + dims + ') — reprends la photo de plus près, le ticket doit remplir l\'écran.';
+  } else {
+    el.className = 'sbox sok';
+    el.textContent = '✅ Photo nette · ' + dims;
+  }
 }
 
 // ── Canvas crop ────────────────────────────────────────────
 function initCrop() {
   var c = document.getElementById('cropCv');
   var wrap = document.getElementById('cropWrap');
-  imgEl = new Image();
-  imgEl.onload = function() {
-    iw = imgEl.width;
-    ih = imgEl.height;
-    c.width = iw;
-    c.height = ih;
-    var wrapW = wrap.clientWidth || 340;
-    var ratio = ih / iw;
-    var displayW = wrapW;
-    var displayH = Math.round(wrapW * ratio);
-    var maxH = Math.round(window.innerHeight * 0.50);
-    if (displayH > maxH) {
-      displayH = maxH;
-      displayW = Math.round(maxH / ratio);
-    }
-    cvDisplayW = displayW;
-    cvDisplayH = displayH;
-    c.style.width = displayW + 'px';
-    c.style.height = displayH + 'px';
-    c.style.display = 'block';
-    redraw();
-  };
-  imgEl.src = snapData;
+  c.width = pw;
+  c.height = ph;
+  var wrapW = wrap.clientWidth || 340;
+  var ratio = ph / pw;
+  var displayW = wrapW;
+  var displayH = Math.round(wrapW * ratio);
+  var maxH = Math.round(window.innerHeight * 0.55);
+  if (displayH > maxH) {
+    displayH = maxH;
+    displayW = Math.round(maxH / ratio);
+  }
+  cvDisplayW = displayW;
+  cvDisplayH = displayH;
+  c.style.width = displayW + 'px';
+  c.style.height = displayH + 'px';
+  c.style.display = 'block';
+  c.style.margin = '0 auto';
+  redraw();
 }
 
 function redraw() {
-  if (!imgEl) return;
+  if (!prevEl) return;
   var c = document.getElementById('cropCv');
   var ctx = c.getContext('2d');
   var bgOn = document.getElementById('bgTog').checked;
-  ctx.clearRect(0, 0, iw, ih);
+  ctx.clearRect(0, 0, pw, ph);
   if (bgOn) {
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, iw, ih);
-    ctx.drawImage(imgEl, box.x*iw, box.y*ih, box.w*iw, box.h*ih, box.x*iw, box.y*ih, box.w*iw, box.h*ih);
+    ctx.fillRect(0, 0, pw, ph);
+    ctx.drawImage(prevEl, box.x*pw, box.y*ph, box.w*pw, box.h*ph, box.x*pw, box.y*ph, box.w*pw, box.h*ph);
   } else {
-    ctx.drawImage(imgEl, 0, 0);
+    ctx.drawImage(prevEl, 0, 0);
   }
   ctx.strokeStyle = '#3b82f6';
-  ctx.lineWidth = Math.max(2, iw * 0.004);
-  ctx.strokeRect(box.x*iw, box.y*ih, box.w*iw, box.h*ih);
+  ctx.lineWidth = Math.max(2, pw * 0.004);
+  ctx.strokeRect(box.x*pw, box.y*ph, box.w*pw, box.h*ph);
   // Corner handles
-  var hs = Math.max(6, iw * 0.012);
+  var hs = Math.max(6, pw * 0.014);
   ctx.fillStyle = '#3b82f6';
   var corners = [
-    [box.x*iw, box.y*ih],
-    [(box.x+box.w)*iw, box.y*ih],
-    [box.x*iw, (box.y+box.h)*ih],
-    [(box.x+box.w)*iw, (box.y+box.h)*ih]
+    [box.x*pw, box.y*ph],
+    [(box.x+box.w)*pw, box.y*ph],
+    [box.x*pw, (box.y+box.h)*ph],
+    [(box.x+box.w)*pw, (box.y+box.h)*ph]
   ];
   for (var i = 0; i < corners.length; i++) {
     ctx.fillRect(corners[i][0]-hs, corners[i][1]-hs, hs*2, hs*2);
   }
+}
+
+// Année manifestement erronée (ex. 2076 lu par l'IA) : à confirmer avant envoi
+function yearOdd(parsed) {
+  return !!parsed && Math.abs(parsed.year - new Date().getFullYear()) > 1;
 }
 
 // Touch/mouse crop interaction
@@ -629,7 +789,7 @@ function redraw() {
     }
     redraw();
   }
-  function onUp() { drag = null; }
+  function onUp() { if (drag) { drag = null; checkQuality(); } }
   c.addEventListener('touchstart', onDown, {passive:false});
   c.addEventListener('touchmove', onMove, {passive:false});
   c.addEventListener('touchend', onUp);
@@ -748,7 +908,7 @@ function updPath() {
   var cl = curLabel(tRaw, cur);
   var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '??';
   var fid = parsed ? getFolderId(mk, parsed.year) : null;
-  document.getElementById('pPth').textContent = fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré');
+  document.getElementById('pPth').textContent = (fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré')) + (yearOdd(parsed) ? ' · ⚠️ année ' + parsed.year + ' ?' : '');
   document.getElementById('pFn').textContent = etab + '_' + df + '_' + cl + '.pdf';
 }
 
@@ -764,7 +924,7 @@ function updPathPdf() {
   var cl = curLabel(tRaw, cur);
   var mk = parsed ? (MONTHS[parsed.month] + ' ' + parsed.year) : '??';
   var fid = parsed ? getFolderId(mk, parsed.year) : null;
-  document.getElementById('pPthPdf').textContent = fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré');
+  document.getElementById('pPthPdf').textContent = (fid ? (mk + ' > Achat') : (mk + ' > ⚠️ Non configuré')) + (yearOdd(parsed) ? ' · ⚠️ année ' + parsed.year + ' ?' : '');
   document.getElementById('pFnPdf').textContent = etab + '_' + df + '_' + cl + '.pdf';
 }
 
@@ -777,17 +937,18 @@ function runIA() {
   msg.style.color = '#94a3b8';
   msg.textContent = 'Analyse en cours…';
 
-  // Compress image before sending — keep good quality
-  var tempImg = new Image();
-  tempImg.onload = function() {
-    var maxW = 1600;
-    var scale = tempImg.width > maxW ? maxW / tempImg.width : 1;
+  // On envoie le ticket cadré (pas la photo entière) : plus de pixels utiles
+  (function() {
+    var cx = Math.round(box.x * iw), cy = Math.round(box.y * ih);
+    var cw = Math.round(box.w * iw), ch = Math.round(box.h * ih);
+    var scale = Math.min(1, 1568 / Math.max(cw, ch));
     var tc = document.createElement('canvas');
-    tc.width = Math.round(tempImg.width * scale);
-    tc.height = Math.round(tempImg.height * scale);
-    tc.getContext('2d').drawImage(tempImg, 0, 0, tc.width, tc.height);
-    var compressed = tc.toDataURL('image/jpeg', 0.85);
-    var b64 = compressed.split(',')[1];
+    tc.width = Math.round(cw * scale);
+    tc.height = Math.round(ch * scale);
+    var tctx = tc.getContext('2d');
+    tctx.imageSmoothingQuality = 'high';
+    tctx.drawImage(imgEl, cx, cy, cw, ch, 0, 0, tc.width, tc.height);
+    var b64 = tc.toDataURL('image/jpeg', 0.85).split(',')[1];
 
     var locInfo = '';
     if (locale === 'US') locInfo = 'Ce ticket provient des USA. La date sur le ticket est au format americain MM/DD/YYYY. Tu dois la CONVERTIR au format DD/MM/YYYY dans ta reponse. Exemple: si tu lis 01/03/2026 sur le ticket, cela signifie le 3 janvier 2026, donc tu reponds 03/01/2026.';
@@ -795,7 +956,7 @@ function runIA() {
     else if (locale === 'GB') locInfo = 'Ce ticket provient du Royaume-Uni. La date est deja au format DD/MM/YYYY.';
     else locInfo = 'Ce ticket provient de France. La date est au format DD/MM/YYYY.';
 
-    var prompt = 'Analyse ce ticket de caisse avec une grande precision. Reponds UNIQUEMENT avec un JSON valide (sans backticks) :\n{"establishment":"","date":"DD/MM/YYYY","total":"0.00","currency":"EUR"}\n\nRegles STRICTES:\n- establishment: lis TRES attentivement le nom exact de l\'enseigne sur le ticket. Chaque lettre compte.\n- date: ' + locInfo + ' L\'annee DOIT avoir 4 chiffres.\n- total: montant TTC final (le plus grand montant en bas du ticket), chiffres avec point decimal\n- currency: EUR pour France, USD pour USA, CAD pour Canada, GBP pour UK';
+    var prompt = 'Analyse ce ticket de caisse avec une grande precision. Reponds UNIQUEMENT avec un JSON valide (sans backticks) :\n{"establishment":"","date":"DD/MM/YYYY","total":"0.00","currency":"EUR","legible":true}\n\nRegles STRICTES:\n- establishment: lis TRES attentivement le nom exact de l\'enseigne sur le ticket. Chaque lettre compte.\n- date: ' + locInfo + ' L\'annee DOIT avoir 4 chiffres.\n- total: montant TTC final (le plus grand montant en bas du ticket), chiffres avec point decimal\n- currency: EUR pour France, USD pour USA, CAD pour Canada, GBP pour UK\n- legible: false si une partie du ticket est floue, coupee ou illisible au point qu\'un controleur ne pourrait pas lire le nom, la date, le detail ou le total ; true sinon';
 
     fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -872,6 +1033,10 @@ function runIA() {
         }
         msg.style.color = '#4ade80';
         msg.textContent = '✅ Champs remplis automatiquement';
+        if (p.legible === false) {
+          msg.style.color = '#fbbf24';
+          msg.textContent = '⚠️ Champs remplis, mais l\'IA juge le ticket difficile à lire — vérifie la photo ou reprends-la';
+        }
         updPath();
       } catch(ex) {
         msg.style.color = '#fbbf24';
@@ -886,8 +1051,7 @@ function runIA() {
       btn.textContent = 'Réessayer';
       btn.disabled = false;
     });
-  };
-  tempImg.src = snapData;
+  })();
 }
 
 // ── Generate PDF + Upload (photo) ──────────────────────────
@@ -904,6 +1068,8 @@ function generate() {
   errEl.style.display = 'none';
 
   var parsed = parseDate(dRaw);
+  if (yearOdd(parsed) && !confirm('La date indique l\'année ' + parsed.year + '. Est-ce correct ?')) return;
+  if (quality.blur && !confirm('La photo semble floue. L\'envoyer quand même ?')) return;
   var etab = san(eRaw);
   var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
   var cl = curLabel(tRaw, cur);
@@ -922,7 +1088,7 @@ function generate() {
   cropCv.width = cw;
   cropCv.height = ch;
   cropCv.getContext('2d').drawImage(imgEl, cx, cy, cw, ch, 0, 0, cw, ch);
-  var cropData = cropCv.toDataURL('image/jpeg', 0.92);
+  var cropData = cropCv.toDataURL('image/jpeg', 0.9);
 
   // Show result panel
   goPanel('p2');
@@ -948,7 +1114,9 @@ function generate() {
     pdfBlob = doc.output('blob');
 
     if (gToken) {
-      uploadToDrive(pdfBlob, pdfName, folderId, scanProps(eRaw, parsed, tRaw, cur, 'photo'));
+      var sp = scanProps(eRaw, parsed, tRaw, cur, 'photo');
+      sp.os_px = cw + 'x' + ch;
+      uploadToDrive(pdfBlob, pdfName, folderId, sp);
     } else {
       document.getElementById('dIco').textContent = '✅';
       document.getElementById('dTitle').textContent = 'PDF généré !';
@@ -1120,6 +1288,7 @@ function generatePdf() {
   errEl.style.display = 'none';
 
   var parsed = parseDateDDMMYYYY(dRaw);
+  if (yearOdd(parsed) && !confirm('La date indique l\'année ' + parsed.year + '. Est-ce correct ?')) return;
   var etab = san(eRaw);
   var df = parsed ? formatDateForFilename(parsed) : '00-mois-2026';
   var cl = curLabel(tRaw, cur);
