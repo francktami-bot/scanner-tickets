@@ -70,6 +70,32 @@ canvas{display:none}
 video{width:100%;border-radius:12px;display:none}
 #camActions{display:none;gap:8px;margin-top:8px}
 #errCam{color:#fca5a5;font-size:13px;min-height:18px}
+.hbtn{margin-left:auto;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.svnav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.svnav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer}
+.svnav .ml{flex:1;text-align:center;font-size:16px;font-weight:700}
+.svsum{background:#0c1f12;border:1px solid #1a4a2a;border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:14px;font-weight:600;color:#86efac}
+.svsum small{display:block;font-size:12px;font-weight:400;color:var(--mu);margin-top:2px}
+.svsearch{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;color:var(--tx);font-size:15px;font-family:inherit;margin-bottom:10px}
+.svrow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:6px;color:var(--tx);text-decoration:none}
+.svrow.tr{opacity:.55}
+.svd{width:40px;text-align:center;font-size:18px;font-weight:700;line-height:1.1;flex-shrink:0}
+.svd small{display:block;font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase}
+.svm{flex:1;min-width:0}
+.svm b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svm span{display:block;font-size:11px;color:var(--mu);margin-top:2px}
+.sva{font-size:14px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.svm .tag,.tag{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;margin:2px 0 0 5px}
+.tag.w{background:#3a2a0a;color:#fbbf24}
+.tag.r{background:#2a1515;color:#fca5a5}
+.tag.m{background:var(--bg);color:var(--mu)}
+.svfail{background:#2a1515;border:1px solid #5a2020;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:#fca5a5}
+.svfail .fl{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px}
+.svfail .fl span{flex:1;word-break:break-all}
+.svfail .fl button{background:none;border:1px solid #5a2020;color:#fca5a5;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
+.svempty{text-align:center;color:var(--mu);font-size:13px;padding:24px 10px}
+.svact{display:flex;gap:8px;margin-top:12px}
+.svact .btn{font-size:13px;min-height:44px;padding:10px}
 .cam-fullscreen{position:fixed!important;top:0;left:0;right:0;bottom:0;z-index:9999;background:#000;display:flex;flex-direction:column}
 .cam-fullscreen video{flex:1;width:100%;height:100%;object-fit:cover;border-radius:0;display:block!important}
 .cam-fullscreen .cam-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(15,25,35,0.95);padding:12px 14px;padding-bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:10000}
@@ -79,7 +105,8 @@ video{width:100%;border-radius:12px;display:none}
 
 <header>
   <span style="font-size:20px">🧾</span>
-  <div><h1>Scanner Tickets<span class="badge">v2.0</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <div><h1>Scanner Tickets<span class="badge">v2.1</span></h1><p>Ocean Skills — Compta 2026</p></div>
+  <button class="hbtn" onclick="openSuivi()">📋 Suivi</button>
 </header>
 
 <canvas id="snapCv"></canvas>
@@ -243,6 +270,23 @@ video{width:100%;border-radius:12px;display:none}
   <div class="err" id="errPdf"></div>
 </div>
 
+<!-- SUIVI : ce qui a été scanné, lu directement dans Drive -->
+<div class="panel" id="pSuivi">
+  <div class="svnav">
+    <button onclick="suiviShift(-1)" aria-label="Mois précédent">‹</button>
+    <div class="ml" id="svMonth">—</div>
+    <button onclick="suiviShift(1)" aria-label="Mois suivant">›</button>
+  </div>
+  <input class="svsearch" id="svQ" type="search" placeholder="🔎 Chercher un ticket (tous les mois)" oninput="renderSuivi()">
+  <div id="svFails"></div>
+  <div id="svBody"></div>
+  <div class="svact" id="svAct" style="display:none">
+    <button class="btn gh" onclick="suiviShare()">📤 Partager la liste</button>
+    <button class="btn gh" onclick="suiviCsv()">📊 Export Excel (CSV)</button>
+  </div>
+  <button class="btn gh" style="margin-top:10px" onclick="resetToHome()">← Retour au scanner</button>
+</div>
+
 <!-- STEP 2 : Résultat -->
 <div class="panel" id="p2">
   <div class="dbox">
@@ -255,6 +299,7 @@ video{width:100%;border-radius:12px;display:none}
       <button class="btn gh" style="font-size:13px" onclick="window.open(driveUrl,'_blank')">📂 Voir dans Drive</button>
     </div>
     <button class="btn gr" style="margin-top:10px" onclick="resetToHome()">🧾 Scanner un autre ticket</button>
+    <button class="btn gh" style="font-size:13px" onclick="openSuivi()">📋 Voir le suivi du mois</button>
   </div>
 </div>
 
@@ -357,7 +402,7 @@ window.addEventListener('load', function() {
 
 // ── Navigation ─────────────────────────────────────────────
 function goPanel(id) {
-  var panels = ['pConfig','pDrive','p0','p1','pPdf','p2'];
+  var panels = ['pConfig','pDrive','p0','p1','pPdf','p2','pSuivi'];
   for (var i = 0; i < panels.length; i++) {
     var el = document.getElementById(panels[i]);
     if (el) el.className = 'panel' + (panels[i] === id ? ' on' : '');
@@ -407,7 +452,9 @@ function connectGoogle() {
         if (banner) { banner.style.borderColor = '#10b981'; banner.style.background = '#0c1f12'; }
         if (msg) { msg.textContent = '✅ Connecté'; msg.style.color = '#4ade80'; }
         if (bc) { bc.textContent = '✅'; bc.style.background = '#10b981'; }
-        goPanel('p0');
+        if (btn) { btn.textContent = '🔗 Autoriser Google Drive'; btn.disabled = false; }
+        if (afterConnect) { var next = afterConnect; afterConnect = null; next(); }
+        else goPanel('p0');
       }
     });
   }
@@ -901,12 +948,13 @@ function generate() {
     pdfBlob = doc.output('blob');
 
     if (gToken) {
-      uploadToDrive(pdfBlob, pdfName, folderId);
+      uploadToDrive(pdfBlob, pdfName, folderId, scanProps(eRaw, parsed, tRaw, cur, 'photo'));
     } else {
       document.getElementById('dIco').textContent = '✅';
       document.getElementById('dTitle').textContent = 'PDF généré !';
       document.getElementById('statusBox').className = 'sbox serr';
       document.getElementById('statusBox').textContent = '⚠️ Drive non connecté — PDF en téléchargement';
+      logFail(pdfName, 'Drive non connecté');
       downloadBlob(pdfBlob, pdfName);
     }
   } catch(ex) {
@@ -1091,19 +1139,21 @@ function generatePdf() {
   document.getElementById('successBlock').style.display = 'none';
 
   if (gToken && pdfFile) {
-    uploadToDrive(pdfFile, pdfName, folderId);
+    uploadToDrive(pdfFile, pdfName, folderId, scanProps(eRaw, parsed, tRaw, cur, 'pdf'));
   } else if (pdfFile) {
     document.getElementById('dIco').textContent = '✅';
     document.getElementById('dTitle').textContent = 'PDF prêt !';
     document.getElementById('statusBox').className = 'sbox serr';
     document.getElementById('statusBox').textContent = '⚠️ Drive non connecté';
+    logFail(pdfName, 'Drive non connecté');
   }
 }
 
 // ── Upload to Drive ────────────────────────────────────────
-function uploadToDrive(blob, filename, folderId) {
+function uploadToDrive(blob, filename, folderId, props) {
   document.getElementById('statusBox').textContent = '⏳ Upload vers Drive…';
   var meta = {name:filename, mimeType:'application/pdf', parents:[folderId]};
+  if (props) meta.appProperties = props;
   var form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(meta)], {type:'application/json'}));
   form.append('file', blob);
@@ -1128,9 +1178,287 @@ function uploadToDrive(blob, filename, folderId) {
     document.getElementById('dTitle').textContent = 'Erreur upload';
     document.getElementById('statusBox').className = 'sbox serr';
     document.getElementById('statusBox').textContent = '❌ ' + err.message;
+    logFail(filename, err.message);
     // Fallback: download
     if (blob instanceof Blob) downloadBlob(blob, filename);
   });
+}
+
+// ── Suivi des scans ────────────────────────────────────────
+// Source de vérité = Google Drive : avec le scope drive.file, l'app ne voit
+// QUE les fichiers qu'elle a elle-même déposés. La liste affichée est donc
+// exactement « ce qui est réellement arrivé dans Drive », où qu'il ait été
+// déplacé ensuite. Aucun journal parallèle à tenir.
+var suiviFiles = null;
+var suiviYM = null;
+var suiviShown = [];
+var afterConnect = null;
+var FOLDER_NAMES = {};
+var MOIS_ABR = ['','janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+(function() {
+  for (var y in ACHAT) { for (var k in ACHAT[y]) { FOLDER_NAMES[ACHAT[y][k]] = k; } }
+})();
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function norm(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/_/g, ' ').toLowerCase();
+}
+function fmtAmt(n, cur) {
+  if (n == null || isNaN(n)) return '—';
+  if (cur === 'EUR') return n.toFixed(2).replace('.', ',') + ' €';
+  return n.toFixed(2) + ' ' + cur;
+}
+function monthLabel(y, m) {
+  var n = MOIS[m] || '';
+  return n.charAt(0).toUpperCase() + n.slice(1) + ' ' + y;
+}
+
+// Métadonnées posées sur le fichier Drive (résistent à un renommage)
+function scanProps(etab, parsed, total, cur, src) {
+  var n = parseFloat(String(total || '0').replace(',', '.'));
+  return {
+    os_etab: String(etab || '').substring(0, 40),
+    os_date: parsed ? (parsed.year + '-' + pad(parsed.month) + '-' + pad(parsed.day)) : '',
+    os_total: isNaN(n) ? '' : n.toFixed(2),
+    os_cur: cur || '',
+    os_src: src
+  };
+}
+
+// Journal local des envois NON aboutis (seul cas que Drive ne peut pas montrer)
+function getFails() {
+  try { return JSON.parse(localStorage.getItem('os_fail_log') || '[]'); } catch (e) { return []; }
+}
+function saveFails(a) {
+  try { localStorage.setItem('os_fail_log', JSON.stringify(a.slice(-30))); } catch (e) {}
+}
+function logFail(name, reason) {
+  var a = getFails();
+  a.push({n: name, r: reason, t: Date.now()});
+  saveFails(a);
+}
+function dropFail(t) {
+  saveFails(getFails().filter(function(f) { return f.t !== t; }));
+  renderSuivi();
+}
+
+// Fichier Drive → ligne de suivi. Le NOM du fichier prime (il peut avoir été
+// corrigé à la main), les métadonnées servent de secours.
+function toEntry(f) {
+  var name = String(f.name || '').normalize('NFC');
+  var e = {
+    id: f.id, name: name, link: f.webViewLink || '', created: new Date(f.createdTime),
+    trashed: !!f.trashed, parent: (f.parents || [])[0] || '',
+    etab: '', day: 0, month: 0, year: 0, amount: null, cur: '', parsed: false
+  };
+  var m = name.match(/^(.+)_(\d{1,2})-([^\-_]+)-(\d{4})_(.+?)\.pdf$/i);
+  var mi = m ? MOIS.indexOf(m[3].toLowerCase()) : -1;
+  if (m && mi > 0) {
+    e.etab = m[1].replace(/_/g, ' ');
+    e.day = parseInt(m[2], 10); e.month = mi; e.year = parseInt(m[4], 10);
+    var am = m[5].match(/^([\d.,]+)\s*(.*)$/);
+    if (am) {
+      e.amount = parseFloat(am[1].replace(',', '.'));
+      var c = am[2].trim().toUpperCase();
+      e.cur = (c === 'EUROS' || c === 'EURO' || c === '€' || c === '') ? 'EUR' : c;
+    }
+    e.parsed = true;
+  } else {
+    var ap = f.appProperties || {};
+    var d = (ap.os_date || '').split('-');
+    if (d.length === 3) {
+      e.etab = ap.os_etab || name.replace(/\.pdf$/i, '');
+      e.year = parseInt(d[0], 10); e.month = parseInt(d[1], 10); e.day = parseInt(d[2], 10);
+      e.amount = ap.os_total ? parseFloat(ap.os_total) : null;
+      e.cur = ap.os_cur || 'EUR';
+      e.parsed = true;
+    } else {
+      // Nom non standard et pas de métadonnées : classé au mois du scan
+      e.etab = name.replace(/\.pdf$/i, '');
+      e.year = e.created.getFullYear(); e.month = e.created.getMonth() + 1; e.day = e.created.getDate();
+    }
+  }
+  return e;
+}
+
+function openSuivi() {
+  stopCam();
+  if (!suiviYM) { var d = new Date(); suiviYM = {y: d.getFullYear(), m: d.getMonth() + 1}; }
+  goPanel('pSuivi');
+  if (gToken) loadSuivi(); else renderSuivi();
+}
+
+function suiviConnect() {
+  afterConnect = function() { goPanel('pSuivi'); loadSuivi(); };
+  connectGoogle();
+}
+
+function suiviShift(delta) {
+  var m = suiviYM.m + delta, y = suiviYM.y;
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+  suiviYM = {y: y, m: m};
+  document.getElementById('svQ').value = '';
+  renderSuivi();
+}
+
+function loadSuivi() {
+  var body = document.getElementById('svBody');
+  body.innerHTML = '<div class="svempty">⏳ Lecture de Drive…</div>';
+  document.getElementById('svAct').style.display = 'none';
+  var all = [];
+  function page(tok) {
+    var url = 'https://www.googleapis.com/drive/v3/files?pageSize=1000' +
+      '&orderBy=' + encodeURIComponent('createdTime desc') +
+      '&q=' + encodeURIComponent("mimeType='application/pdf'") +
+      '&fields=' + encodeURIComponent('nextPageToken,files(id,name,createdTime,parents,webViewLink,trashed,appProperties)') +
+      (tok ? '&pageToken=' + encodeURIComponent(tok) : '');
+    fetch(url, {headers: {Authorization: 'Bearer ' + gToken}})
+    .then(function(r) {
+      if (r.status === 401) { gToken = null; throw new Error('SESSION'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d) {
+      all = all.concat(d.files || []);
+      if (d.nextPageToken) { page(d.nextPageToken); return; }
+      suiviFiles = all.map(toEntry);
+      renderSuivi();
+    })
+    .catch(function(err) {
+      if (err.message === 'SESSION') { renderSuivi(); return; }
+      body.innerHTML = '<div class="svfail">❌ Lecture de Drive impossible : ' + esc(err.message) +
+        '</div><button class="btn gh" onclick="loadSuivi()">Réessayer</button>';
+    });
+  }
+  page(null);
+}
+
+function suiviTags(e) {
+  var t = '';
+  if (e.trashed) return '<span class="tag r">🗑 corbeille</span>';
+  if (!e.parsed) t += '<span class="tag w">nom non standard</span>';
+  var mk = (MONTHS[e.month] || '') + ' ' + e.year;
+  var expected = getFolderId(mk, e.year);
+  if (e.parent !== expected) {
+    if (e.parent === ROOT) t += '<span class="tag w">⚠️ à la racine' + (expected ? '' : ' (mois non configuré)') + '</span>';
+    else if (FOLDER_NAMES[e.parent]) t += '<span class="tag w">⚠️ rangé dans ' + esc(FOLDER_NAMES[e.parent]) + '</span>';
+    else t += '<span class="tag m">↪ déplacé</span>';
+  }
+  return t;
+}
+
+function renderSuivi() {
+  var body = document.getElementById('svBody');
+  var act = document.getElementById('svAct');
+  var q = norm(document.getElementById('svQ').value).trim();
+  document.getElementById('svMonth').textContent = q ? 'Recherche — tous les mois' : monthLabel(suiviYM.y, suiviYM.m);
+
+  // Envois non aboutis : masqués dès qu'un fichier du même nom existe dans Drive
+  var inDrive = {};
+  (suiviFiles || []).forEach(function(e) { if (!e.trashed) inDrive[e.name] = 1; });
+  var fails = getFails().filter(function(f) { return !inDrive[String(f.n).normalize('NFC')]; });
+  var fh = '';
+  if (fails.length) {
+    fh = '<div class="svfail"><b>⚠️ ' + fails.length + ' envoi' + (fails.length > 1 ? 's' : '') +
+      ' non abouti' + (fails.length > 1 ? 's' : '') + ' — absent' + (fails.length > 1 ? 's' : '') + ' de Drive, à rescanner</b>';
+    fails.forEach(function(f) {
+      var d = new Date(f.t);
+      fh += '<div class="fl"><span>' + esc(f.n) + '<br>' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' à ' +
+        pad(d.getHours()) + 'h' + pad(d.getMinutes()) + ' · ' + esc(f.r) + '</span>' +
+        '<button onclick="dropFail(' + f.t + ')">Réglé ✕</button></div>';
+    });
+    fh += '</div>';
+  }
+  document.getElementById('svFails').innerHTML = fh;
+
+  if (!gToken || !suiviFiles) {
+    suiviShown = [];
+    act.style.display = 'none';
+    if (!gToken) {
+      body.innerHTML = '<div class="svempty">Le suivi se lit directement dans Google Drive.<br>Connecte Drive pour afficher la liste.</div>' +
+        '<button class="btn gr" onclick="suiviConnect()">🔗 Connecter Google Drive</button>';
+    }
+    return;
+  }
+
+  var list = suiviFiles.filter(function(e) {
+    if (q) { var hay = norm(e.name) + ' ' + norm(e.etab); return q.split(/\s+/).every(function(w) { return hay.indexOf(w) >= 0; }); }
+    return e.year === suiviYM.y && e.month === suiviYM.m;
+  });
+  list.sort(function(a, b) {
+    var ka = a.year * 10000 + a.month * 100 + a.day, kb = b.year * 10000 + b.month * 100 + b.day;
+    return kb - ka || b.created - a.created;
+  });
+  suiviShown = list;
+
+  var live = list.filter(function(e) { return !e.trashed; });
+  var tot = {}, seen = {}, dup = {};
+  live.forEach(function(e) {
+    if (e.amount != null && !isNaN(e.amount)) tot[e.cur] = (tot[e.cur] || 0) + e.amount;
+    if (seen[e.name]) dup[e.name] = 1;
+    seen[e.name] = 1;
+  });
+  var parts = [];
+  ['EUR', 'USD', 'CAD', 'GBP'].concat(Object.keys(tot)).forEach(function(c) {
+    if (tot[c] != null && parts.indexOf(fmtAmt(tot[c], c)) < 0) parts.push(fmtAmt(tot[c], c));
+  });
+  var h = '<div class="svsum">' + live.length + ' pièce' + (live.length > 1 ? 's' : '') + ' dans Drive' +
+    (parts.length ? ' · ' + parts.join(' + ') : '') +
+    '<small>' + (q ? 'Résultats sur tous les mois' : 'Classées par date du ticket · touche une ligne pour ouvrir le PDF') + '</small></div>';
+
+  if (!list.length) {
+    h += '<div class="svempty">' + (q ? 'Aucun scan ne correspond à « ' + esc(document.getElementById('svQ').value) + ' ».<br>Ce ticket n\'est pas dans Drive.' : 'Aucun scan pour ce mois.') + '</div>';
+  }
+  list.forEach(function(e) {
+    var c = e.created;
+    var scan = 'scanné le ' + pad(c.getDate()) + '/' + pad(c.getMonth() + 1) + ' à ' + pad(c.getHours()) + 'h' + pad(c.getMinutes());
+    h += '<a class="svrow' + (e.trashed ? ' tr' : '') + '" href="' + esc(e.link) + '" target="_blank" rel="noopener">' +
+      '<div class="svd">' + pad(e.day) + '<small>' + esc(MOIS_ABR[e.month] || '') + (q ? ' ' + String(e.year).slice(2) : '') + '</small></div>' +
+      '<div class="svm"><b>' + esc(e.etab) + '</b><span>' + scan +
+      (dup[e.name] && !e.trashed ? '<span class="tag w">doublon ?</span>' : '') + suiviTags(e) + '</span></div>' +
+      '<div class="sva">' + fmtAmt(e.amount, e.cur) + '</div></a>';
+  });
+  body.innerHTML = h;
+  act.style.display = live.length ? 'flex' : 'none';
+}
+
+function suiviTitle() {
+  var q = document.getElementById('svQ').value.trim();
+  return q ? 'recherche « ' + q + ' »' : monthLabel(suiviYM.y, suiviYM.m);
+}
+
+function suiviShare() {
+  var live = suiviShown.filter(function(e) { return !e.trashed; });
+  var txt = 'Tickets scannés — ' + suiviTitle() + ' (' + live.length + ' pièce' + (live.length > 1 ? 's' : '') + ')\n';
+  live.forEach(function(e) {
+    txt += pad(e.day) + '/' + pad(e.month) + '/' + e.year + ' · ' + e.etab + ' · ' + fmtAmt(e.amount, e.cur) + '\n';
+  });
+  if (navigator.share) {
+    navigator.share({text: txt}).catch(function() {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(function() { alert('Liste copiée'); });
+  }
+}
+
+function suiviCsv() {
+  var live = suiviShown.filter(function(e) { return !e.trashed; });
+  function cell(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+  var rows = [['Date ticket', 'Etablissement', 'Montant', 'Devise', 'Scanne le', 'Fichier', 'Lien'].join(';')];
+  live.forEach(function(e) {
+    var c = e.created;
+    rows.push([
+      cell(pad(e.day) + '/' + pad(e.month) + '/' + e.year), cell(e.etab),
+      cell(e.amount == null || isNaN(e.amount) ? '' : e.amount.toFixed(2).replace('.', ',')), cell(e.cur),
+      cell(pad(c.getDate()) + '/' + pad(c.getMonth() + 1) + '/' + c.getFullYear() + ' ' + pad(c.getHours()) + ':' + pad(c.getMinutes())),
+      cell(e.name), cell(e.link)
+    ].join(';'));
+  });
+  var blob = new Blob(['﻿' + rows.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  var q = document.getElementById('svQ').value.trim();
+  downloadBlob(blob, 'Suivi scans ' + (q ? 'recherche' : suiviYM.y + '-' + pad(suiviYM.m)) + '.csv');
 }
 
 // ── Download fallback ──────────────────────────────────────
